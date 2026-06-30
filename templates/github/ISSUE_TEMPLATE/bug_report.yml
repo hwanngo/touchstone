@@ -1,0 +1,26 @@
+# Copy to .github/ISSUE_TEMPLATE/bug_report.yml. See standards/practices/collaboration.md §6.
+name: Bug report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, plus what you expected instead.
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. see error
+    validations: { required: true }
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Version, OS, runtime — anything relevant.
+    validations: { required: false }

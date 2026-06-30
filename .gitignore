@@ -1,0 +1,28 @@
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# AI assistant working folders (never commit)
+.claude/
+.cursor/
+.cursorrules
+.codex/
+.gemini/
+.aider*
+.continue/
+.windsurf/
+.gstack/
+# agent-framework working dirs (anchored — avoid an unbounded substring glob)
+**/.superpowers/
+**/superpowers/
+
+# .claude/ is local-only (agent hooks are sourced from hooks/; consumers install them via
+# init.sh --with-hooks). Only the plugin manifest under .claude-plugin/ is committed.
+.claude-plugin/*
+!.claude-plugin/plugin.json
+
+# tooling caches / link-checker
+node_modules/
+.lycheecache

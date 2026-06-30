@@ -1,0 +1,59 @@
+# Standard task-runner target contract — see standards/practices/collaboration.md.
+# `just` (https://just.systems). Every repo should expose: setup, lint, fmt, test, build, ci.
+# Delete the stacks you don't use.
+
+default:
+    @just --list
+
+# install deps + git hooks
+setup:
+    pre-commit install
+    -uv sync
+    -pnpm install
+    -go mod download
+
+# Gates run STRICTLY for each stack that's present (a real failure fails the recipe → fails `ci`);
+# absent stacks are skipped. Don't add `-` to these — that turns the gate into a guaranteed pass.
+lint:
+    if [ -f pyproject.toml ]; then uv run ruff check . && uv run ruff format --check .; fi
+    if [ -f package.json ]; then pnpm biome ci .; fi
+    if [ -f go.mod ]; then golangci-lint run; fi
+
+# fmt mutates files (convenience, not a gate) — `-` so a missing tool doesn't abort the others.
+fmt:
+    -uv run ruff format .
+    -pnpm biome format --write .
+    -gofumpt -w .
+
+test:
+    if [ -f pyproject.toml ]; then uv run pytest -q; fi
+    if [ -f package.json ]; then pnpm test; fi
+    if [ -f go.mod ]; then go test -race ./...; fi
+
+build:
+    if [ -f package.json ]; then pnpm build; fi
+    if [ -f go.mod ]; then go build ./...; fi
+
+# what CI runs
+ci: lint test build
+
+# --- touchstone authoring (no-ops in repos without these files) ---
+# audit the instruction files: skills (spec + spine), standards docs (template), description quality
+lint-skills:
+    -bash scripts/check-skills.sh
+    -bash scripts/check-standards.sh
+    -bash scripts/check-skill-quality.sh
+
+# regenerate the skills catalog (machine index) from frontmatter
+skill-catalog:
+    -bash scripts/gen-skill-catalog.sh > skills/CATALOG.md
+
+# lint the kit's own shell (matches the `shell` CI job)
+lint-shell:
+    -bash -n hooks/*.sh scripts/*.sh templates/*.sh
+    -shellcheck hooks/*.sh scripts/*.sh templates/*.sh
+    -shfmt -d -i 2 hooks/*.sh scripts/*.sh templates/*.sh
+
+# syntax-check the agent hook + tooling scripts
+hooks-check:
+    -bash -n hooks/*.sh scripts/*.sh templates/*.sh

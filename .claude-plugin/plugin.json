@@ -1,0 +1,17 @@
+{
+  "name": "touchstone",
+  "version": "0.1.0",
+  "description": "Opinionated, tool-agnostic engineering standards as Claude Code skills — deep per-stack and cross-cutting standards across languages, frameworks, platform, design, and practices, each surfacing the right rules at the right moment.",
+  "author": { "name": "touchstone" },
+  "homepage": "https://github.com/hwanngo/touchstone",
+  "repository": "https://github.com/hwanngo/touchstone",
+  "license": "MIT",
+  "keywords": [
+    "engineering-standards",
+    "best-practices",
+    "ci-cd",
+    "security",
+    "code-quality",
+    "skills"
+  ]
+}

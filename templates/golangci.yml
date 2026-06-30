@@ -1,0 +1,39 @@
+# golangci-lint v2 config — see standards/languages/golang.md §4
+# Place at repo root as .golangci.yml
+version: "2"
+run:
+  timeout: 5m
+linters:
+  default: standard # govet, staticcheck, errcheck, ineffassign, unused
+  enable:
+    - revive
+    - gosec
+    - gocritic
+    - unparam
+    - bodyclose
+    - errorlint
+    - errname
+    - nilerr
+    - unconvert
+    - perfsprint
+    - copyloopvar
+    - nolintlint
+  settings:
+    errcheck:
+      check-type-assertions: true
+    govet:
+      enable-all: true
+      disable: [fieldalignment] # noisy; opt-in per hot struct
+    gocritic:
+      enabled-tags: [diagnostic, performance]
+  exclusions:
+    generated: lax
+    presets: [comments, common-false-positives, std-error-handling]
+    rules:
+      - path: _test\.go
+        linters: [gosec, unparam, bodyclose]
+formatters:
+  enable: [gofumpt, goimports]
+  settings:
+    goimports:
+      local-prefixes: [github.com/yourorg/yourrepo] # <- set this

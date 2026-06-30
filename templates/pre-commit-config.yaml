@@ -1,0 +1,49 @@
+# Pre-commit hooks — see standards/platform/ci-cd.md §5 and standards/practices/security.md §1.
+# Install: `pipx install pre-commit && pre-commit install`
+# Place at repo root as .pre-commit-config.yaml. Keep `rev`s current (`pre-commit autoupdate`).
+ci:
+  autofix_prs: true
+  autoupdate_schedule: weekly
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: mixed-line-ending
+
+  # Secrets (every repo)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.0
+    hooks:
+      - id: gitleaks
+
+  # --- Python (ruff-check before ruff-format) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.5.0
+    hooks:
+      - id: uv-lock # fails if uv.lock is stale vs pyproject.toml
+
+  # --- TypeScript / React ---
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v0.6.0
+    hooks:
+      - id: biome-check
+
+  # --- GitHub Actions workflows ---
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.0.0
+    hooks:
+      - id: zizmor

@@ -1,0 +1,17 @@
+# Copy to .github/ISSUE_TEMPLATE/feature_request.yml. See standards/practices/collaboration.md §6.
+name: Feature request
+description: Propose a change or new capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do, and why is it hard today?
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you'd like to happen. Mention alternatives you considered.
+    validations: { required: true }
