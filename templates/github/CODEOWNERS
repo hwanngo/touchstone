@@ -1,0 +1,14 @@
+# Code review ownership — see standards/platform/ci-cd.md §6.
+# Place at .github/CODEOWNERS. Key to TEAMS, not individuals. Last match wins.
+# Activate "require review from Code Owners" in the branch ruleset.
+# (Invalid lines are silently ignored — verify after editing.)
+
+# Catch-all fallback
+*               @your-org/core-team
+
+# Area owners (examples)
+/infra/         @your-org/platform
+/.github/       @your-org/platform
+*.tf            @your-org/platform
+/frontend/      @your-org/web
+/backend/       @your-org/backend

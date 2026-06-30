@@ -1,0 +1,80 @@
+# touchstone CI starter — copy to .github/workflows/ci.yml.
+# See standards/platform/ci-cd.md. BEFORE relying on this:
+#   1. Pin every action to a commit SHA:  pinact run
+#   2. Delete the jobs for stacks you don't use, and update `needs:` in `ci-required`.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read # least-privilege floor; elevate per-job only where needed
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2 # egress-policy: block in prod (see ci-cd.md)
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      - run: uv sync --locked
+      - run: uv lock --check
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uvx pyright
+      - run: uv run pytest --cov --cov-fail-under=80
+      - run: uvx pip-audit
+
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm biome ci .
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - run: go install mvdan.cc/gofumpt@latest && test -z "$(gofumpt -l .)" || { gofumpt -l .; exit 1; }
+      - uses: golangci/golangci-lint-action@v6
+      - run: go test -race -covermode=atomic ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - run: go mod tidy && git diff --exit-code go.mod go.sum
+
+  # The ONE required status check — branch protection requires this name (see ci-cd.md §2).
+  # A skipped required job reports "success", so gate on the actual results instead.
+  ci-required:
+    needs: [python, node, go]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all gates passed
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "A required gate failed or was cancelled."; exit 1
+          fi
+          echo "All required gates passed."

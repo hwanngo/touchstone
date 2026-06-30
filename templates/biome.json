@@ -1,0 +1,26 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+  "files": { "ignoreUnknown": true, "includes": ["src/**", "*.ts", "*.tsx", "*.json"] },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "linter": {
+    "enabled": true,
+    "domains": { "react": "recommended", "test": "recommended" },
+    "rules": {
+      "a11y": "error",
+      "suspicious": { "noConsole": { "level": "error", "options": { "allow": ["warn", "error"] } } },
+      "style": { "useImportType": "error" }
+    }
+  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all"
+    }
+  },
+  "overrides": [
+    { "includes": ["**/*.test.{ts,tsx}", "**/__tests__/**"], "linter": { "rules": { "suspicious": { "noConsole": "off" } } } }
+  ]
+}

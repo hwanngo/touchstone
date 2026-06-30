@@ -1,0 +1,33 @@
+# Drop-in [tool.*] sections for a uv-managed project — see standards/languages/python.md.
+# Merge into your pyproject.toml.
+
+[tool.ruff]
+target-version = "py312"   # gates UP/FA rewrites to your supported floor
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "C4", "UP", "SIM", "PT", "S", "RUF",
+          "PIE", "PTH", "RET", "TID", "TC", "FA", "PERF", "DTZ", "ISC", "G", "LOG"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]            # allow `assert` in tests (bandit S)
+"**/conftest.py" = ["S101"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+xfail_strict = true              # an xfail that passes = failure
+filterwarnings = ["error"]       # deprecations become red CI (add a documented allowlist as needed)
+markers = [
+    "slow: long-running",
+    "integration: needs external services",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
+# CI: uv run pytest --cov --cov-report=term-missing --cov-fail-under=80

@@ -1,0 +1,40 @@
+# Single .dockerignore at each build-context root — see standards/platform/docker.md.
+# Prune to your stack; secret/VCS/test entries are universal.
+.git
+.github
+**/*.md
+!README.md
+
+# build inputs the image never needs
+Dockerfile*
+.dockerignore
+docker-compose*.y*ml
+compose*.y*ml
+**/*.map                 # never ship source maps into an image
+
+# deps / build output (stack-specific)
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+coverage
+# NOTE: only ignore dist/build if the image builds them ITSELF (multi-stage).
+# If you COPY a host-built bundle into the image, REMOVE these two lines.
+dist
+build
+
+# secrets — never in an image layer
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.npmrc
+.aws
+secrets/
+
+# editor / local
+.vscode
+.idea
+.DS_Store

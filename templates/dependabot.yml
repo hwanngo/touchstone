@@ -1,0 +1,33 @@
+# Dependabot — see standards/practices/security.md §2 and ci-cd.md.
+# Place at .github/dependabot.yml. Enable only the ecosystems you use.
+# (Renovate is an alternative with better cooldown/grouping — see security.md.)
+#
+# The cooldown delays *version* updates so freshly-published (possibly malicious) releases
+# don't auto-merge. SECURITY updates are a separate channel and are NOT cooldown-gated —
+# CVE fixes still land immediately. Applied uniformly below.
+version: 2
+updates:
+  - package-ecosystem: "github-actions" # keep SHA-pinned actions current
+    directory: "/"
+    schedule: { interval: "weekly" }
+    cooldown: { default-days: 7 }
+
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    cooldown: { default-days: 7 }
+
+  - package-ecosystem: "npm" # pnpm
+    directory: "/"
+    schedule: { interval: "weekly" }
+    cooldown: { default-days: 7 }
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    cooldown: { default-days: 7 }
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    cooldown: { default-days: 7 }

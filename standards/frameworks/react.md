@@ -1,0 +1,285 @@
+# React Standards
+
+How to build a good React app — the **framework layer**, meaningful once you've chosen React.
+Built on the TypeScript standard; language rules → [typescript.md](../languages/typescript.md).
+
+Applies to React single-page apps (Vite by default), tested with **React Testing Library**,
+shipped as an installable **PWA** where it fits. Need SSR/SEO instead? → §3 and
+[next.md](next.md).
+
+---
+
+## 1. Project structure (feature-based)
+
+**Organise by feature, not by file type** — a global `components/`-`hooks/`-`utils/` split by
+kind doesn't scale. Colocate everything a feature owns under `src/features/<name>/`; reserve the
+top level for genuinely shared code.
+
+```text
+src/
+  app/          # routes, root providers, router — the composition layer
+  components/    # shared design-system primitives    config/ — global config, env (§6)
+  features/<feature>/{ api (fns + TanStack Query hooks §5), components, hooks, types, utils, stores }
+  hooks/ lib/ stores/ testing/ types/ utils/   # shared, cross-feature
+```
+
+- **Unidirectional imports: `shared → features → app`.** Shared never imports a feature; one
+  feature never imports another (compose in `app/`). Enforce with ESLint
+  `import/no-restricted-paths` so violations fail CI, not review.
+- **No barrel/`index.ts` re-export files** — they defeat tree-shaking, create import cycles, and
+  bloat chunks; import the concrete path. _(scale-up: one barrel at a public package boundary.)_
+- **Absolute imports** from `src` (`@/...` via tsconfig `paths` + Vite alias) — no `../../../`.
+
+## 2. Components, hooks & app conventions
+
+- Function components + hooks only — no legacy class components. **Type props with a plain
+  `type`, destructured in the signature — not `React.FC`** ([typescript.md](../languages/typescript.md)).
+- **Colocate** state, helpers, and sub-components next to where they're used; move them up only
+  when a second caller appears. **Abstract on the *second* repetition, not the first** —
+  premature shared abstractions cost more than the duplication they replace.
+- **One component returns one tree.** Don't define nested render-functions (`renderHeader()`)
+  inside a component — extract a real component. A ballooning prop list is the signal to split
+  or switch to composition (`children`/slots), not to add a tenth prop.
+- **Wrap third-party UI/libs** behind a thin local component so a swap is a one-file change.
+- **Validate every external/API boundary with a schema (Zod).** Parse responses into typed
+  data at the edge so the rest of the app works with trusted types; surface clear errors on
+  parse failure. See [api-design.md](../design/api-design.md) for sharing schemas.
+- Use relative API URLs (`/api/...`) and a dev-server proxy so dev, preview, and the
+  production-served build all work unchanged.
+- Streaming endpoints (SSE/websockets) must hit the network live — exclude them from any
+  service-worker caching (§12).
+- Follow the project's component library / design system consistently.
+- **Route all logging through a thin `logger.ts`** (levels + structured context, one Sentry
+  seam), not raw `console.*` — enforced by Biome `noConsole`.
+
+## 3. SPA vs. meta-framework boundary
+
+**A Vite SPA is the default** for app-shell / authenticated tools (dashboards, internal apps)
+where there's no SEO surface and the user is already logged in. This doc assumes it.
+
+Reach for a **meta-framework — Next.js (App Router) or Remix —** when you need **SSR/SSG for
+SEO**, **streaming React Server Components**, or **edge rendering**. That's an architecture
+choice made up front, not a retrofit: **don't bolt SSR onto a Vite SPA.** Adopting one
+*supersedes* the Vite-specific rules here — the `build.sourcemap` guard, chunking, and the
+hand-rolled service worker are all owned by the framework instead (see [next.md](next.md)).
+
+| You need… | Use |
+|---|---|
+| App shell behind auth, no SEO | **Vite SPA** (this doc) |
+| Public pages, SEO, social previews | **Next.js App Router / Remix** (SSR/SSG) |
+| Streaming, RSC, edge | **Next.js App Router** |
+
+## 4. State boundaries (server vs. client)
+
+**The #1 senior call: match state to its kind.** Most "state management" pain is server-cache
+state crammed into a client store. Five kinds, five homes:
+
+| Kind | Home | Don't |
+|---|---|---|
+| **Server cache** (API data) | **TanStack Query** | …copy into a global store / `useState` |
+| **Local UI** (open, hovered) | `useState` / `useReducer` | …lift to global "just in case" |
+| **App/global UI** (theme, auth, toasts) | Context, or **Zustand/Jotai** _(scale-up)_ | …reach for Redux by default |
+| **Form** | React Hook Form (§8) | …`useState`-per-field |
+| **URL** (filters, tabs, pagination) | the router (search params) | …mirror into React state |
+
+- **Server data is a cache you don't own, not client state.** In Redux/Zustand you'd reimplement
+  the caching, dedup, refetch, and invalidation TanStack Query already does. **Don't copy query
+  results into `useState`** — that opts you out of background updates.
+- **Global stores are for genuinely app-wide *client* state only.** Context covers most; add
+  Zustand/Jotai only when context re-render scope or boilerplate actually bites.
+
+## 5. Data fetching & the API layer
+
+- **One pre-configured API client** (`lib/api-client.ts`) — shared everywhere; never scatter raw
+  `fetch`/`axios` calls through components.
+- **Colocate each request with its feature**: `features/<f>/api/<op>.ts` exports the **fetcher**,
+  its **Zod schema/types**, and the **TanStack Query hook** that wraps it together. UI imports
+  the hook, never a bare fetch.
+- **One custom hook per query/mutation.** Keeps fetching out of components, colocates the query
+  key, and makes config changes one-line.
+- **Query keys are arrays, treated like effect deps** (`['todos', filters]`) — every input the
+  query depends on goes in the key so changes refetch automatically. Use a per-feature **key
+  factory** to avoid stringly-typed drift.
+- **Don't use the query cache as a state manager.** `setQueryData` is for optimistic updates and
+  mutation responses only — other writes get clobbered by background refetches. Tune **`staleTime`**
+  (not `gcTime`) to control refetch frequency.
+
+## 6. Error boundaries, Suspense & server state
+
+- **Wrap the app in error boundaries** (`react-error-boundary`): a top-level catch-all + per-
+  route boundaries so a widget crash never white-screens the shell. Wire `onError` to the
+  logger; show `error.message` only in dev. Pair routes with `React.lazy` + `Suspense` for
+  code-splitting (let Vite/Rollup auto-chunk — don't hand-write `manualChunks`).
+- **Server state via TanStack Query** (§5), never hand-rolled `useEffect`+`fetch` — that leaks
+  race conditions, double-fires under StrictMode, and reimplements caching/cancellation per call.
+  Pair queries with `<Suspense>` + an error boundary so loading/error are structural, not
+  per-component `if (isLoading)` ladders.
+- **Validate runtime env at boot.** Parse `import.meta.env` through a Zod schema in a side-
+  effect-imported `env.ts` so misconfig fails loudly, not mid-session. **The `VITE_` prefix is
+  a boundary, not a safeguard** — prefixed vars are inlined as plaintext into the bundle; never
+  put secrets behind it, and scan the built `dist/` for leaks (see
+  [app-security.md](../practices/app-security.md)).
+
+## 7. Re-render & runtime performance
+
+**Measure first.** Profile with the **React DevTools Profiler** (flame chart + "why did this
+render") before optimising anything — most "slow" components aren't, and untargeted
+memoisation adds dependency-array bugs for no win.
+
+- **`useMemo`/`useCallback` are not reflexive.** Reach for them only when the value is a
+  referentially-stable prop to a **memoised** child (`React.memo`), or guards a **genuinely
+  expensive** compute. Memoising a primitive or a cheap object that nothing downstream depends
+  on is pure overhead.
+- **Shrink re-render scope structurally** before reaching for memo:
+  - **Colocate state** with the component that uses it; **lift state down** so a high-frequency
+    update doesn't re-render a whole page.
+  - **Pass `children`** (or any element prop) so a stateful wrapper re-renders without
+    re-rendering a static subtree it received as a prop.
+  - **Stable keys** for dynamic lists — **never the array index** when items reorder/insert/
+    delete; it corrupts state and defeats reconciliation.
+- **React Compiler (v1.0, stable Oct 2025) is the default.** Adopt it (`babel-plugin-react-
+  compiler`) — it memoises automatically and correctly, including values after early returns
+  that `useMemo` literally cannot reach. **Once it's on, stop hand-writing `useMemo`/
+  `useCallback`**; keep them only as escape hatches where an effect's deps need exact control.
+  The compiler *requires* Rules-of-Hooks compliance to be safe.
+- **Don't suppress `useExhaustiveDependencies`** (Biome's `react` domain). A silenced
+  dependency array is a stale-closure bug waiting to happen — and the Compiler trusts it.
+
+## 8. Forms
+
+- **React Hook Form + the Zod resolver** (`@hookform/resolvers/zod`) — **uncontrolled inputs**
+  (minimal re-renders, §7) validated against a schema **reused from the API boundary** (§2/§5), so
+  client and server agree on shape by construction.
+- **Don't hand-roll `useState`-per-field** + manual `onChange` + ad-hoc validation; it
+  re-renders on every keystroke and drifts from the API contract.
+
+```tsx
+const form = useForm<CreateUser>({ resolver: zodResolver(createUserSchema) })
+// register fields uncontrolled; form.handleSubmit(onValid) parses+validates once
+```
+
+See [api-design.md](../design/api-design.md) for sharing the schema across the boundary.
+
+## 9. Component API design
+
+- **Props over context for reuse.** Context couples a component to a provider; a reusable
+  component takes what it needs as props. Reserve context for genuinely app-wide ambient state.
+- **Discriminated-union variant props, not boolean explosion.** A single `variant:
+  'primary' | 'secondary' | 'danger'` beats `isPrimary`/`isDanger`/… (which permit nonsensical
+  combinations the type system should forbid).
+- **Forward `ref` and spread `...rest`** to the root element so the component composes with
+  focus management, libraries, and `data-*`/`aria-*` attributes.
+- **Support controlled *and* uncontrolled** via `value` (+ `onChange`) / `defaultValue`, mirroring
+  native inputs — so callers pick the mode that fits.
+
+```tsx
+type Props = { variant: 'primary' | 'secondary' | 'danger' } & ComponentPropsWithRef<'button'>
+function Button({ variant, ...rest }: Props) { return <button data-variant={variant} {...rest} /> }
+```
+
+## 10. Accessibility (first-class, not a pass at the end)
+
+Target **WCAG 2.2 AA**. Accessibility is a build requirement, not a polish step.
+
+- **Semantic HTML first** — `<button>`, `<nav>`, `<main>`, real headings. ARIA *supplements*
+  semantics; it never replaces them. **Don't over-ARIA** — a wrong `role` is worse than none.
+- **Keyboard + focus**: every interactive element reachable and operable by keyboard; manage
+  focus on route change, dialog open/close, and async content; visible focus rings.
+- **Labelled form fields** (`<label>`/`aria-label`) and **announced errors**
+  (`aria-describedby` and a live region) — pairs with §8.
+- **Colour contrast** meets AA; **honour `prefers-reduced-motion`** (gate non-essential
+  animation/transitions behind the media query).
+- **CI gate**: Biome's `a11y` rules are already on ([typescript.md](../languages/typescript.md)
+  §3) — add an **axe / Lighthouse-a11y** check in CI so runtime violations (contrast, focus
+  order, missing labels) also fail the build, not just static JSX lint. Drive these via
+  behaviour tests (roles/labels, §13) — see
+  [testing-strategy.md](../practices/testing-strategy.md).
+
+## 11. Web Vitals & performance budget
+
+Hold a **Core Web Vitals** budget (field thresholds, 75th percentile):
+
+| Metric | Good | Measures |
+|---|---|---|
+| **LCP** | ≤ 2.5 s | largest content paint |
+| **INP** | ≤ 200 ms | interaction responsiveness (replaced FID, 2024) |
+| **CLS** | ≤ 0.1 | layout stability |
+
+- **Lazy-load routes** with `React.lazy` + `Suspense` (§6) so first load ships only the shell.
+- **Image policy**: explicit `width`/`height` (or `aspect-ratio`) to kill CLS; modern formats
+  (AVIF/WebP); `loading="lazy"` below the fold; never load oversized images.
+- **Ban inline-style sprawl and runtime CSS-in-JS** (e.g. styled-components/emotion runtime):
+  inline `style={{…}}` defeats theming/caching; runtime CSS-in-JS adds per-render style
+  computation and hurts INP/LCP. Use build-time styles (**Tailwind** *or* **CSS Modules** —
+  pick ONE and state it in the repo).
+- **Lighthouse-CI gate** for the lab CWV proxies + the a11y/SEO categories; pair it with a
+  `size-limit` bundle budget (§12) — they cover different failure modes (transfer size vs.
+  rendered experience).
+
+## 12. Build & tooling (Vite + PWA)
+
+**Build tool / dev server: Vite** — the default for React/TS SPAs.
+
+```bash
+pnpm dev                      # dev server
+pnpm build                    # tsc --noEmit && vite build
+```
+
+- **Never ship source maps to production.** Keep `build.sourcemap: false` (Vite's default —
+  set it explicitly as a guard); the minified bundle should be the only client artifact.
+  Verify after building: no `*.map` files and no `//# sourceMappingURL=` comments in `dist/`.
+  Serve from a web server that also denies `.map` requests as defense-in-depth (see
+  [docker.md](../platform/docker.md)).
+- **Bundle hygiene:** inspect with `rollup-plugin-visualizer` (behind an `ANALYZE` flag) and
+  fail CI on bloat with **`size-limit`** (a real non-zero exit, unlike Vite's
+  `chunkSizeWarningLimit` which only warns). Set the budget at current size and ratchet down.
+
+**PWA (installable web app).** For user-facing web apps, ship an installable PWA via
+`vite-plugin-pwa` (Workbox):
+
+- Generate a **web manifest** (name, icons, theme/background colour, `display: standalone`)
+  and a **service worker** that precaches the app shell; use `registerType: 'autoUpdate'`.
+- **Denylist dynamic/API routes from the service worker** (e.g.
+  `navigateFallbackDenylist: [/^\/api\//]`) so API/SSE always hit the network — never let the
+  SW cache dynamic responses.
+- Provide the required icons (192/512 px incl. a maskable variant, apple-touch-icon, favicon)
+  in `public/`. If branding changes, update all icons and the manifest together.
+- When touching caching/SW config, verify installability (DevTools → Application, or a
+  Lighthouse PWA audit) before merging.
+
+## 13. Component testing (RTL + MSW)
+
+Mechanics (runner, coverage thresholds) live in
+[typescript.md](../languages/typescript.md) §7. The React strategy:
+
+- **React Testing Library**, jsdom environment, global setup file. Test **behaviour and
+  accessibility** (roles, labels, user events) — not implementation details. Use
+  `@testing-library/user-event` for interactions.
+- Co-locate tests (e.g. `src/**/__tests__/*.test.tsx`).
+- **Mock the network, not `fetch`** — use **MSW** request handlers (shareable with dev/Storybook)
+  and assert against the same Zod schemas the app uses. Hand-mocking `fetch` is brittle and
+  doesn't compose with the TanStack Query layer (§5/§6). Prefer route/page-level integration tests
+  (real provider tree + `QueryClient` + MSW) over shallow unit tests of presentational
+  components. See [testing-strategy.md](../practices/testing-strategy.md).
+
+## Definition of done
+
+- [ ] Language DoD met ([typescript.md](../languages/typescript.md) §10): `biome ci`, `tsc`,
+      tests, supply chain
+- [ ] Feature-based structure held: no cross-feature imports, unidirectional rule passes, no
+      barrel files (§1)
+- [ ] Server state lives in TanStack Query, not copied into `useState`/global stores (§4)
+- [ ] `useExhaustiveDependencies` not suppressed
+- [ ] `pnpm build` succeeds; bundle within `size-limit`
+- [ ] Production build ships **no source maps** (`build.sourcemap: false`; no `*.map` in `dist/`)
+- [ ] No secrets behind `VITE_`; built `dist/` scanned clean
+- [ ] A11y gate passes (axe/Lighthouse-a11y) — labels, contrast, keyboard/focus (§10)
+- [ ] Web Vitals budget met (Lighthouse-CI: LCP/INP/CLS, §11)
+- [ ] PWA still installs (manifest + SW valid) if SW/caching/branding changed
+
+**Sources:** [bulletproof-react](https://github.com/alan2207/bulletproof-react) (project
+structure, state management, API layer, components) ·
+[TanStack Query docs](https://tanstack.com/query/latest/docs/framework/react/overview) &
+[TkDodo's Practical React Query](https://tkdodo.eu/blog/practical-react-query) ·
+[React TypeScript Cheatsheet](https://github.com/typescript-cheatsheets/react) ·
+[react.dev — You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)

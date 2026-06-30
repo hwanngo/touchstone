@@ -1,0 +1,12 @@
+# Dependabot for the touchstone repo itself — keeps our SHA-pinned Actions current so the kit doesn't
+# self-violate hard rule #8 / ci-cd.md. The kit ships no package manifests (it's bash + Markdown),
+# so github-actions is the only ecosystem here. The adopter-facing template is templates/dependabot.yml.
+# Security updates are a separate, non-cooldown-gated channel — CVE fixes still land immediately.
+version: 2
+updates:
+  - package-ecosystem: "github-actions" # bump the pinned action SHAs in .github/workflows/
+    directory: "/"
+    schedule: { interval: "weekly" }
+    cooldown: { default-days: 7 }
+    groups:
+      actions: { patterns: ["*"] } # one grouped PR, not one per action

@@ -1,0 +1,22 @@
+# touchstone release-automation starter — copy to .github/workflows/release-please.yml.
+# See standards/platform/ci-cd.md §7. Derives releases from Conventional Commits, keeps a standing
+# release PR, bumps version + CHANGELOG, tags on merge. Pin actions to SHA (`pinact run`).
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release PR, tags, releases
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          release-type: simple # language-agnostic; use `python`/`node`/`go` for lang-aware bumps
