@@ -3,7 +3,7 @@ name: go-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any Go code in a repo that follows touchstone (gofumpt, golangci-lint v2, go test -race, slog, distroless). Invoke before adding deps, editing tests, or designing packages/APIs.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

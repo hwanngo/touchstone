@@ -3,7 +3,7 @@ name: laravel-standards
 description: Use when building or reviewing a Laravel 11/12 app in a touchstone repo — structure, Eloquent, Form Requests, API Resources, queues, frontend, testing. Triggers on `laravel/framework` in composer.json, `artisan`, `app/Http/`, `routes/web.php|api.php`, `*FormRequest`/`JsonResource`. PHP-language rules live in the php skill; this is the framework layer.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -20,7 +20,7 @@ Full standard: **`standards/frameworks/laravel.md`** (layers on `standards/langu
 - `env()` only inside `config/`; secrets out of source; `config:cache`/`route:cache` in prod; **Pint + Larastan + Pest** gate CI.
 
 ## Defer (don't duplicate)
-- Schema/migrations/expand-contract → `../platform/database.md`; API contract/errors → `../design/api-design.md`; authN/authZ/OWASP → `../practices/app-security.md`; job retries/idempotency → `../design/resilience.md`; PHP language/static-analysis baseline → `../languages/php.md`; test strategy → `../practices/testing-strategy.md`.
+- Schema/migrations/expand-contract → `../../standards/platform/database.md`; API contract/errors → `../../standards/design/api-design.md`; authN/authZ/OWASP → `../../standards/practices/app-security.md`; job retries/idempotency → `../../standards/design/resilience.md`; PHP language/static-analysis baseline → `../../standards/languages/php.md`; test strategy → `../../standards/practices/testing-strategy.md`.
 
 ## Done
 thin controllers + service/action layer · Form Request validation with `authorize()` · mass assignment guarded + N+1 killed · `JsonResource` APIs, Sanctum, deny-by-default Policies · idempotent queued jobs `afterCommit` · config cached, no secrets in source · Pest on a real DB · Pint/Larastan/Pest gate CI. See `standards/frameworks/laravel.md`.

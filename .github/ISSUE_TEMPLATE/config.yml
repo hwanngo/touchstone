@@ -1,0 +1,11 @@
+# touchstone's own issue chooser. Adopters get templates/github/ISSUE_TEMPLATE/ instead.
+# Blank issues are off so every report lands in a form that asks for the reproduction details
+# a bash-and-markdown kit actually needs (OS, bash version, pinned kit version).
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/hwanngo/touchstone/security/advisories/new
+    about: Report privately — never in a public issue. See SECURITY.md for what is in scope.
+  - name: Contributing guide
+    url: https://github.com/hwanngo/touchstone/blob/main/CONTRIBUTING.md
+    about: The bar for a change, the authoring conventions, and the release/bump rules.

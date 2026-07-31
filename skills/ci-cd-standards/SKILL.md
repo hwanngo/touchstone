@@ -3,7 +3,7 @@ name: ci-cd-standards
 description: Use when writing or editing CI/CD pipelines, GitHub Actions workflows (.github/workflows/**), dependabot/renovate config, release automation, or branch-protection/rulesets in a repo that follows touchstone. Invoke before changing how the project builds, gates, or releases.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

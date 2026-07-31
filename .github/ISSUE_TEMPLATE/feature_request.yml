@@ -1,0 +1,44 @@
+# touchstone's own proposal form. Adapted from templates/github/ISSUE_TEMPLATE/feature_request.yml
+# with the two questions CONTRIBUTING actually screens on: is the recommendation decisive and
+# sourced, and can it be enforced? A standard that maps to no gate, lint rule, or checklist item is
+# a suggestion, not a standard — this form asks for that up front rather than in review.
+name: Proposal
+description: Propose a standard, gate, hook, template, or skill change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do, and what makes it hard or error-prone today?
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: >
+        One recommendation with rationale, not a survey of options. Say which alternatives you
+        rejected and why, and note anything that recently changed upstream (deprecations, renames,
+        reversed advice).
+    validations: { required: true }
+  - type: input
+    id: home
+    attributes:
+      label: Where it belongs
+      description: "The file(s) this would touch, e.g. standards/practices/testing.md + its skills/ wrapper."
+    validations: { required: true }
+  - type: textarea
+    id: enforcement
+    attributes:
+      label: How would it be enforced?
+      description: >
+        A CI gate, a lint rule, a pre-commit hook, an agent hook, or a checklist item — and what
+        the failing case looks like. If it cannot be enforced mechanically, say so; it can still
+        land, but it must be marked as guidance rather than a rule.
+    validations: { required: true }
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources
+      description: Official docs, a concrete incident, or a rationale a senior engineer would defend in review.
+    validations: { required: false }

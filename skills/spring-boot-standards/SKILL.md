@@ -3,13 +3,13 @@ name: spring-boot-standards
 description: Use when building a Spring Boot 3.x service (Java or Kotlin) in a touchstone repo — structure, DI, typed config, web/validation, JPA, transactions, security, testing. Triggers on `org.springframework.boot` deps, `@SpringBootApplication`, `application.yml`/`application.properties`. JVM language rules live in the java-kotlin skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Spring Boot (framework)
 
-Full standard: **`standards/frameworks/spring-boot.md`** (layers on `languages/java-kotlin.md`). This
+Full standard: **`standards/frameworks/spring-boot.md`** (layers on `standards/languages/java-kotlin.md`). This
 skill inlines the load-bearing rules so it stays useful standalone in `~/.claude/skills/`:
 
 ## Always
@@ -27,7 +27,7 @@ skill inlines the load-bearing rules so it stays useful standalone in `~/.claude
 - **Tests** — slice it (`@WebMvcTest`/`@DataJpaTest`/`@SpringBootTest`); Testcontainers with a real Postgres via `@ServiceConnection`, not H2.
 
 ## Defer (don't duplicate)
-- JDK/build/null-safety → `../languages/java-kotlin.md`; schema/migrations/N+1 → `../platform/database.md`; authN/authZ → `../practices/app-security.md`; metrics/traces → `../platform/observability.md`; HTTP contracts → `../design/api-design.md`.
+- JDK/build/null-safety → `../../standards/languages/java-kotlin.md`; schema/migrations/N+1 → `../../standards/platform/database.md`; authN/authZ → `../../standards/practices/app-security.md`; metrics/traces → `../../standards/platform/observability.md`; HTTP contracts → `../../standards/design/api-design.md`.
 
 ## Done
 constructor DI · typed config, secrets external · `ProblemDetail` errors · `@Transactional` on services · N+1 guarded · deny-by-default security · sliced tests + Testcontainers. See `standards/frameworks/spring-boot.md`.

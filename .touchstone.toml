@@ -1,0 +1,21 @@
+# touchstone self-adoption marker — the kit holds itself to its own drift gate.
+# See scripts/check-sync.sh. version is kept in lockstep by scripts/bump-version.sh.
+version = "0.2.0"
+stacks = []
+# UNREVIEWED (2026-07-30): level = 4 was chosen by the gate-hardening round on the reasoning that
+# the standards kit should hold itself to the top maturity level. It is a judgment call that gates
+# nothing today (nothing reads `level` yet) — a human should confirm or lower it.
+level = 4            # the standards kit holds itself to the top maturity level
+waivers = []         # documented, reviewed exceptions (standards-level; NOT file drift)
+
+# Managed files whose KIT copy intentionally differs from the adopter-facing template it ships.
+# Entry format: "<dest> :: <sha256 of dest> :: <sha256 of kit source> :: <reason>".
+# check-sync fails on undeclared drift, on a stale entry (files now identical), and on any
+# hash mismatch (either side edited without re-declaring). To re-declare after an intentional
+# edit: scripts/check-sync.sh --print-diverge <dest>  and paste the emitted line.
+diverge = [
+  "justfile :: 20ac7a9a898ec6cf6ac8969fa683d27b9ea0aafaf0e02e035614ff01df0a9b41 :: 13b9207738158155fe061f6688a089dc813fbce2c50f1d8d545cd908a8168e35 :: kit's runner executes the kit's own bash/markdown gates; templates/justfile is the multi-stack adopter starter",
+  ".github/dependabot.yml :: 02755ac13e8eaf350673e14f49e150c00296dea60e314dc6dbe207b3fe76c369 :: 77c7b2dd3d1e71d913a7903a803230b09b7adaa7b504654792b50a8b71b0be54 :: kit is bash+markdown so github-actions is its only ecosystem (grouped PRs); the template enables per-stack ecosystems",
+  ".github/workflows/ci.yml :: b3557b1cded86b7ffbf5376268fed90b55c8634f1ca850e778bcd22073e81929 :: 7693a02da349f6eb16528f2983292e02b69d01011b393b512297986e6a665496 :: kit CI runs the docs/skills/shell/tests/sync/secret-scan/workflow-lint gates on the kit itself, behind a ci-required aggregator; the template is the python/node/go starter",
+  ".pre-commit-config.yaml :: faee252b6aeaf90480950a73481527f65dfcff855f41083de7f97f3bb229a605 :: 69405d8631420e14d19aa330e04a0bd10ed8c245b1d55b6d91b757c90a206559 :: kit is bash+markdown, so the template's python/node/actions hook blocks are replaced by shellcheck/shfmt/markdownlint-cli2 local hooks running the same commands as `just lint`, plus a tests/fixtures/ exclusion so no hook rewrites deliberately-malformed test data",
+]

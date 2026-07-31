@@ -1,0 +1,16 @@
+# The pre-fix template, reduced: every tree-walking tool is pointed at `.` with no exclusion, so
+# each one walks into the vendored kit at .touchstone/.
+
+# lint every stack present in this repo
+lint:
+    if [ -f pyproject.toml ]; then uv run ruff check . && uv run ruff format --check .; fi
+    if [ -f go.mod ]; then golangci-lint run; fi
+
+# format every stack present in this repo
+fmt:
+    if [ -f pyproject.toml ]; then uv run ruff format .; fi
+    if [ -f go.mod ]; then gofumpt -w .; fi
+
+# run every test suite present in this repo
+test:
+    if [ -f pyproject.toml ]; then uv run pytest -q; fi

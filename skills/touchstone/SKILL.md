@@ -3,7 +3,7 @@ name: touchstone
 description: Use at the START of any non-trivial task in a repository that follows touchstone (look for AGENTS.md + a standards/ folder, or a .touchstone marker). Establishes the universal hard rules and routes to the right per-stack standard. Invoke before editing code, config, CI, or committing.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -18,9 +18,11 @@ below apply to every task regardless of stack; the per-stack skills carry the de
 3. **Tests self-skip when fixtures are absent** (clean-checkout CI); run Go tests with `-race`.
 4. **Latest stable deps**; treat advisories as priority work.
 5. **Containers:** small current base images (slim/alpine/distroless), multi-stage, non-root, digest-pinned.
-6. **Never commit** secrets, generated artifacts, per-developer AI-assistant scratch/settings, or
-   AI-generated TDD/SDD planning docs. Shared, reviewed rule files (`AGENTS.md`, `.cursor/rules/*.mdc`,
-   …) ARE committed — see `standards/practices/collaboration.md` §4.
+6. **Never commit** secrets, per-developer AI-assistant scratch/settings, or AI-generated TDD/SDD
+   planning docs. Generated artifacts stay out of git too, with one sanctioned exception: a
+   deterministic file, marked as generated, whose freshness CI enforces by regenerating it and
+   failing on any diff (e.g. `skills/CATALOG.md`). Shared, reviewed rule files (`AGENTS.md`,
+   `.cursor/rules/*.mdc`, …) ARE committed — see `standards/practices/collaboration.md` §4.
 
 ## Collaboration & git (from `standards/practices/collaboration.md`)
 - **Conventional Commits**, atomic; branch + PR, never push to main directly; `--force-with-lease` only.

@@ -1,0 +1,8 @@
+# Names an id that does not exist at this rev — the P0-1 defect verbatim.
+repos:
+  - repo: https://example.invalid/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format

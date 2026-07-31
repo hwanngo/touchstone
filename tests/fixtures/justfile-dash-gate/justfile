@@ -1,0 +1,9 @@
+# Fixture: exactly one defect — a gate line carrying just's `-` (ignore-exit-status) prefix.
+# Everything else here must NOT be flagged, so exactly one hit is the only correct verdict.
+
+default:
+    @just --list
+
+gates:
+    bash scripts/check-a.sh
+    -bash scripts/check-b.sh

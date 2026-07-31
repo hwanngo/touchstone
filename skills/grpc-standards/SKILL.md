@@ -1,19 +1,19 @@
 ---
 name: grpc-standards
-description: Use when designing or changing a gRPC service or Protocol Buffers schema in a touchstone repo — `.proto` field-numbering/evolution, the four RPC types, the status-code + google.rpc.Status error model, deadlines/cancellation, retries via service config, interceptors/metadata, mTLS, and the gRPC-Web/grpc-gateway browser edge. Triggers on `.proto` files, `buf.yaml`/`buf.gen.yaml`, gRPC service/stub code, Connect/grpc-gateway. Boundary: REST → api-design-standards, GraphQL → graphql-standards, general contract/versioning rules → api-design-standards; this owns the wire.
+description: "Use when designing or changing a gRPC service or Protocol Buffers schema in a touchstone repo — `.proto` field-numbering/evolution, the four RPC types, the status-code + google.rpc.Status error model, deadlines/cancellation, retries via service config, interceptors/metadata, mTLS, and the gRPC-Web/grpc-gateway browser edge. Triggers on `.proto` files, `buf.yaml`/`buf.gen.yaml`, gRPC service/stub code, Connect/grpc-gateway. Boundary: REST → api-design-standards, GraphQL → graphql-standards, general contract/versioning rules → api-design-standards; this owns the wire."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # gRPC & Protobuf (design)
 
 Full standard: **`standards/design/grpc.md`** in the touchstone repo. Defers general API-contract and
-versioning rules to [api-design.md](../../standards/design/api-design.md), failure mechanics
-(timeouts, retries, breakers) to [resilience.md](../../standards/design/resilience.md),
-streaming-as-messaging to [event-driven.md](../../standards/design/event-driven.md), and authN/authZ
-to [app-security.md](../../standards/practices/app-security.md). Load-bearing rules:
+versioning rules to [standards/design/api-design.md](../../standards/design/api-design.md), failure mechanics
+(timeouts, retries, breakers) to [standards/design/resilience.md](../../standards/design/resilience.md),
+streaming-as-messaging to [standards/design/event-driven.md](../../standards/design/event-driven.md), and authN/authZ
+to [standards/practices/app-security.md](../../standards/practices/app-security.md). Load-bearing rules:
 
 ## Always
 - **The `.proto` is the contract — field numbers are forever.** Add fields freely; never reuse, renumber, or repurpose a tag. `reserve` retired numbers **and** names so they can't be recycled.

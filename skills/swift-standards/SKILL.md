@@ -3,7 +3,7 @@ name: swift-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any modern Swift (6.x) code (.swift files, Package.swift) in a touchstone repo — swiftly-pinned toolchain, SwiftPM, swift-format, Swift 6 strict concurrency (actors/Sendable/structured tasks), typed throws, no force-unwrap, Swift Testing. Invoke before adding deps, touching concurrency, editing tests, or changing the public API. Not for cross-cutting supply-chain (security-standards) or pipeline (ci-cd-standards) concerns.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

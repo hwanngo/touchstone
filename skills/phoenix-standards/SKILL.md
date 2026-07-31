@@ -3,7 +3,7 @@ name: phoenix-standards
 description: Use when building or reviewing a Phoenix 1.7+/LiveView app in a touchstone repo — contexts, Ecto, the web layer, LiveView, channels/PubSub, auth/scopes, Oban, releases. Triggers on `phoenix` in `mix.exs`, a `*_web/` directory, `.heex` templates, `use Phoenix.LiveView`. Elixir-language idioms (OTP, GenServer, supervision) live in the elixir skill; this is the framework layer.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -20,7 +20,7 @@ Full standard: **`standards/frameworks/phoenix.md`** (layers on `standards/langu
 - **Auth via `phx.gen.auth`** (magic-link, sudo mode); **scopes** thread the current user/tenant through contexts so authorization is the default. Background work on **Oban** — idempotent, pass ids, enqueue inside the transaction.
 
 ## Defer (don't duplicate)
-- Schema/migrations/expand-contract → `../platform/database.md`; authN/authZ/OWASP → `../practices/app-security.md`; telemetry/metrics/tracing → `../platform/observability.md`; durable cross-system events → `../design/event-driven.md`; Elixir/OTP idioms → `../languages/elixir.md`; test strategy → `../practices/testing-strategy.md`.
+- Schema/migrations/expand-contract → `../../standards/platform/database.md`; authN/authZ/OWASP → `../../standards/practices/app-security.md`; telemetry/metrics/tracing → `../../standards/platform/observability.md`; durable cross-system events → `../../standards/design/event-driven.md`; Elixir/OTP idioms → `../../standards/languages/elixir.md`; test strategy → `../../standards/practices/testing-strategy.md`.
 
 ## Done
 contexts own Ecto · changesets validate + `Multi` · associations preloaded (no N+1) · expand/contract migrations · `~p` routes + thin controllers · LiveView with streams · `phx.gen.auth` + scopes · idempotent Oban · ExUnit SQL Sandbox `async: true` + LiveViewTest on real Postgres · `mix release` with `runtime.exs` fail-fast. See `standards/frameworks/phoenix.md`.

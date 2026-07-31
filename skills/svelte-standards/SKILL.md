@@ -3,13 +3,13 @@ name: svelte-standards
 description: Use when building a Svelte 5 + SvelteKit 2 app in a touchstone repo — runes, components, file routing, load functions, form actions, hooks, rendering modes, env. Triggers on .svelte files, `svelte`/`@sveltejs/kit` in package.json, svelte.config.js, src/routes. Language-level TS rules live in the typescript skill; for React/Next/Nuxt use those skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Svelte & SvelteKit (framework)
 
-Full standard: **`standards/frameworks/svelte.md`** (layers on `languages/typescript.md`).
+Full standard: **`standards/frameworks/svelte.md`** (layers on `standards/languages/typescript.md`).
 Load-bearing rules:
 
 ## Always
@@ -19,7 +19,7 @@ Load-bearing rules:
 - **Authorize every action/endpoint**; `hooks.server.ts` `handle` resolves session into `event.locals`. Pick rendering mode per route (`prerender`/`ssr`/`csr`) — don't bolt on a SPA framework.
 
 ## Defer
-- API contract → `../design/api-design.md`; authN/authZ/CORS/CSRF → `../practices/security.md`; a11y (Svelte compiler warnings + axe gate) → `../practices/accessibility.md`; test layers → `../practices/testing-strategy.md`; language/tsconfig → `../languages/typescript.md`.
+- API contract → `../../standards/design/api-design.md`; authN/authZ/CORS/CSRF → `../../standards/practices/security.md`; a11y (Svelte compiler warnings + axe gate) → `../../standards/practices/accessibility.md`; test layers → `../../standards/practices/testing-strategy.md`; language/tsconfig → `../../standards/languages/typescript.md`.
 
 ## Don't get burned
 - **No module-scope mutable `$state`** holding per-user data — the server shares the module across requests and leaks state between users; use `context` off a per-request `load` value.

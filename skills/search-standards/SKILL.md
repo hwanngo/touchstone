@@ -1,9 +1,9 @@
 ---
 name: search-standards
-description: Use when adding full-text or semantic search, standing up Elasticsearch/OpenSearch or a vector DB (pgvector/Qdrant/Weaviate), designing index mappings/analyzers, tuning relevance, or reindexing in a touchstone repo — covers when search beats a SQL LIKE, BM25 relevance, vector/hybrid retrieval, and zero-downtime alias-swap reindexing. Boundary: RAG generation (chunking, reranking, grounding, eval) → ai-engineering-standards; the source-of-truth DB → database-standards.
+description: "Use when adding full-text or semantic search, standing up Elasticsearch/OpenSearch or a vector DB (pgvector/Qdrant/Weaviate), designing index mappings/analyzers, tuning relevance, or reindexing in a touchstone repo — covers when search beats a SQL LIKE, BM25 relevance, vector/hybrid retrieval, and zero-downtime alias-swap reindexing. Boundary: RAG generation (chunking, reranking, grounding, eval) → ai-engineering-standards; the source-of-truth DB → database-standards."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

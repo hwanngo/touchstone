@@ -3,13 +3,13 @@ name: react-standards
 description: Use when building React UIs in a touchstone repo — components, hooks, state, data fetching, forms, Vite/PWA, accessibility. Triggers on .tsx with JSX, `react` in package.json, vite.config. Language-level TS rules live in the typescript skill; for Next.js/Nuxt use those skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # React (framework)
 
-Full standard: **`standards/frameworks/react.md`** (layers on `languages/typescript.md`).
+Full standard: **`standards/frameworks/react.md`** (layers on `standards/languages/typescript.md`).
 Load-bearing rules:
 
 ## Always

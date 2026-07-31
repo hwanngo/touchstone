@@ -1,0 +1,15 @@
+# The same recipes with the vendored kit excluded from every tree-walking tool.
+
+# lint every stack present in this repo
+lint:
+    if [ -f pyproject.toml ]; then uv run ruff check . --extend-exclude .touchstone && uv run ruff format --check . --extend-exclude .touchstone; fi
+    if [ -f go.mod ]; then golangci-lint run; fi
+
+# format every stack present in this repo
+fmt:
+    if [ -f pyproject.toml ]; then uv run ruff format . --extend-exclude .touchstone; fi
+    if [ -f go.mod ]; then find . -name '*.go' -not -path './.touchstone/*' -exec gofumpt -w {} +; fi
+
+# run every test suite present in this repo
+test:
+    if [ -f pyproject.toml ]; then uv run pytest -q --ignore=.touchstone; fi

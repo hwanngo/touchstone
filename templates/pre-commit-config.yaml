@@ -1,13 +1,20 @@
 # Pre-commit hooks — see standards/platform/ci-cd.md §5 and standards/practices/security.md §1.
-# Install: `pipx install pre-commit && pre-commit install`
+# Install: `uv tool install pre-commit && pre-commit install` — hard rule 1 is Python → `uv`.
 # Place at repo root as .pre-commit-config.yaml. Keep `rev`s current (`pre-commit autoupdate`).
+#
+# Every `id:` below MUST exist in that repo AT THAT `rev`. pre-commit resolves ids at run time and
+# aborts the WHOLE run — so every `git commit` in the adopting repo — on the first unknown one; it
+# does not skip the bad hook. This file shipped `ruff-check` at `rev: v0.8.0`, where the id is
+# `ruff` (`ruff-check` arrived in v0.9.x), and no adopter could commit at all. Verified by
+# tests/gates/pre-commit-hook-ids.test.sh against each repo's .pre-commit-hooks.yaml at the pinned
+# rev — run it after any `rev` bump, and never bump a rev without re-checking the ids.
 ci:
   autofix_prs: true
   autoupdate_schedule: weekly
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -20,30 +27,30 @@ repos:
 
   # Secrets (every repo)
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.0
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 
   # --- Python (ruff-check before ruff-format) ---
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    rev: v0.16.1
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.5.0
+    rev: 0.12.0
     hooks:
       - id: uv-lock # fails if uv.lock is stale vs pyproject.toml
 
   # --- TypeScript / React ---
   - repo: https://github.com/biomejs/pre-commit
-    rev: v0.6.0
+    rev: v2.5.6
     hooks:
       - id: biome-check
 
   # --- GitHub Actions workflows ---
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.0.0
+    rev: v1.28.0
     hooks:
       - id: zizmor

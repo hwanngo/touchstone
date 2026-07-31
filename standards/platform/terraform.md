@@ -224,5 +224,3 @@ KMS-encrypted", "no `0.0.0.0/0` ingress", "mandatory cost tags").
 - [ ] Modules covered by **`tofu test`**; reusable modules have **Terratest** E2E _(scale-up)_
 - [ ] No premature abstraction; **Terragrunt** only when env boilerplate is real duplication
       _(scale-up)_
-</content>
-</invoke>

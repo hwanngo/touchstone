@@ -3,7 +3,7 @@ name: devops-standards
 description: Use when writing or editing infrastructure-as-code (Terraform/OpenTofu), Kubernetes manifests, GitOps/Argo/Flux config, Helm/Kustomize, deployment pipelines, or observability/SRE setup in a repo that follows touchstone. Invoke before changing how a service is deployed or run.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

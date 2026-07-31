@@ -3,14 +3,14 @@ name: app-security-standards
 description: Use when writing or reviewing authentication, authorization, sessions/tokens (JWT/OAuth/OIDC), input validation, or anything touching the application attack surface in a touchstone repo. Invoke before adding a login/permission check, an API endpoint that handles user data, or when threat-modeling a new feature.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Application Security
 
 Full standard: **`standards/practices/app-security.md`** in the touchstone repo. (Supply-chain/secrets/
-CI live in `security.md`.) Load-bearing rules:
+CI live in `standards/practices/security.md`.) Load-bearing rules:
 
 ## Always
 - **AuthZ deny-by-default**, enforced on the **server** every request — never trust the client; **check object-level ownership** (IDOR/BOLA — OWASP API #1) and isolate tenants.

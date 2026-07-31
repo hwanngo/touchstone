@@ -1,15 +1,15 @@
 ---
 name: terraform-standards
-description: Use when writing or editing Terraform/OpenTofu IaC (.tf, .tofu, terragrunt.hcl), backend/state config, modules, or the plan/apply pipeline in a touchstone repo — covers OpenTofu-default toolchain, directory-per-env state, version pinning, the fmt→validate→lint→scan→policy→plan→gated-apply workflow, secrets, drift, and testing. Boundary: Kubernetes/GitOps/observability runtime concerns are devops-standards; CI wiring/OIDC is ci-cd-standards.
+description: "Use when writing or editing Terraform/OpenTofu IaC (.tf, .tofu, terragrunt.hcl), backend/state config, modules, or the plan/apply pipeline in a touchstone repo — covers OpenTofu-default toolchain, directory-per-env state, version pinning, the fmt→validate→lint→scan→policy→plan→gated-apply workflow, secrets, drift, and testing. Boundary: Kubernetes/GitOps/observability runtime concerns are devops-standards; CI wiring/OIDC is ci-cd-standards."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Terraform / OpenTofu (IaC)
 
-Full standard: **`standards/platform/terraform.md`** in the touchstone repo ([devops.md](../../standards/platform/devops.md)
+Full standard: **`standards/platform/terraform.md`** in the touchstone repo ([standards/platform/devops.md](../../standards/platform/devops.md)
 summarizes IaC and defers the depth here). This skill inlines the load-bearing rules so it stays
 useful even when installed standalone in `~/.claude/skills/`:
 
@@ -35,4 +35,3 @@ useful even when installed standalone in `~/.claude/skills/`:
 
 ## Done
 OpenTofu default · directory-per-env own-state, no copy-paste · remote state locked+encrypted, segmented, lockfile committed · CI fmt/validate/tflint/scan/policy/plan-on-PR + gated apply, OIDC, no laptop apply · secrets out of `.tf`/`.tfvars`/state · drift alerts + `tofu test`/Terratest _(scale-up)_. See `standards/platform/terraform.md`.
-</content>

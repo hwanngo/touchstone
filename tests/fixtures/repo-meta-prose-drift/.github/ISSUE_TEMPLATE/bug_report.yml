@@ -1,0 +1,7 @@
+name: Bug report
+description: fixture
+body:
+  - type: input
+    id: x
+    attributes:
+      label: X

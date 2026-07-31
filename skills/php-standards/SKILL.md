@@ -3,7 +3,7 @@ name: php-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any modern PHP (8.3/8.4) code in a touchstone repo — covers Composer, strict_types, PHPStan, Pint, Pest, and PHP-FPM/OPcache. Triggers on .php files, composer.json/composer.lock, phpstan.neon, pint.json. Not Laravel/Symfony framework specifics or the OWASP Top 10 (see app-security).
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

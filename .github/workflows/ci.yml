@@ -2,6 +2,21 @@ name: CI
 
 # Dogfooding: the kit holds itself to its own ci-cd.md standards —
 # least-privilege token, SHA-pinned actions, hardened runner.
+#
+# Why every harden-runner step below says `egress-policy: audit`, in full, because ci-cd.md §4
+# calls audit "monitoring, not a control — an exfiltration attempt still succeeds":
+#
+# §4 mandates `block` + `allowed-endpoints` "for all production-touching workflows", and this one
+# is not: no secrets, no OIDC, no deploy, `permissions: contents: read` at the floor,
+# `persist-credentials: false`, every job read-only. So §4 does not require `block` here — but it
+# also calls audit a rollout window, not a resting place.
+#
+# UNREVIEWED (2026-07-30): the allowlist was deliberately not guessed. It is not derivable from
+# this file — `go install` resolves through the Go module proxy and its CDN redirects, `pnpm dlx`
+# resolves tarball hosts from the npm registry, and harden-runner and actions/checkout each reach
+# their own githubusercontent hosts. A wrong list fails every job, and this workflow cannot be run
+# from a workstation to find out. Close it from data: take the endpoints these audit runs have
+# already recorded in the StepSecurity insights for a green run, then switch to `block` with them.
 on:
   push:
     branches: [main]
@@ -26,8 +41,15 @@ jobs:
         with:
           persist-credentials: false
 
+      # Hard rule 1 is "Node → pnpm; never npm/yarn", and `npx` is npm's runner — so CI uses the
+      # same `pnpm dlx` invocation, at the same pinned version, that `just lint` runs locally.
+      # The kit ships no package.json, so action-setup needs an explicit pnpm version.
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 10.34.5
+
       - name: Lint Markdown
-        run: npx --yes markdownlint-cli2 "**/*.md"
+        run: pnpm dlx markdownlint-cli2@0.23.2 "**/*.md"
 
       - name: Check internal links resolve
         run: bash scripts/check-links.sh
@@ -49,6 +71,12 @@ jobs:
       - name: Validate standards docs
         run: bash scripts/check-standards.sh
 
+      # agents/ is agent-facing surface with the same failure modes as skills/ — an unparseable
+      # description silently costs the definition its routing trigger. Gated from the commit that
+      # introduced it, not later: every capability this kit shipped ungated has rotted.
+      - name: Validate agent definitions
+        run: bash scripts/check-agents.sh
+
       - name: Skill description quality (advisory)
         run: bash scripts/check-skill-quality.sh
 
@@ -58,8 +86,14 @@ jobs:
           diff -q /tmp/catalog.md skills/CATALOG.md \
             || { echo "skills/CATALOG.md is stale — run: bash scripts/gen-skill-catalog.sh > skills/CATALOG.md"; exit 1; }
 
+      # The kit self-adopts (.touchstone.toml at the root), so its own drift gate has to run here
+      # too — self-adoption that only `just ci` verifies locally is theatre. Last in the job: the
+      # steps above regenerate and validate content this one then hashes.
+      - name: Self-adoption drift gate
+        run: bash scripts/check-sync.sh
+
   shell:
-    name: Lint shell (shellcheck + shfmt)
+    name: Lint shell (shellcheck + shfmt + actionlint)
     runs-on: ubuntu-latest
     steps:
       - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
@@ -70,12 +104,267 @@ jobs:
           persist-credentials: false
 
       - name: Syntax-check
-        run: bash -n hooks/*.sh scripts/*.sh templates/*.sh
+        run: find hooks scripts templates tests -name '*.sh' -print0 | xargs -0 -n1 bash -n
 
       - name: shellcheck
-        run: shellcheck hooks/*.sh scripts/*.sh templates/*.sh
+        run: find hooks scripts templates tests -name '*.sh' -print0 | xargs -0 shellcheck
 
       - name: shfmt (diff-only)
         run: |
           go install mvdan.cc/sh/v3/cmd/shfmt@v3.13.1
-          "$(go env GOPATH)/bin/shfmt" -d -i 2 hooks/*.sh scripts/*.sh templates/*.sh
+          find hooks scripts templates tests -name '*.sh' -print0 \
+            | xargs -0 "$(go env GOPATH)/bin/shfmt" -d -i 2
+
+      # THE SHELL NOTHING ELSE LINTS. Every step above sweeps `*.sh` files — the same sweep
+      # `just lint` runs — so the shell embedded in a workflow's own `run:` blocks was checked by
+      # nothing at all. That is roughly 40 lines in this file, and it includes the `ci-required`
+      # aggregator: the job that decides whether every other gate can block a merge. The
+      # `# shellcheck disable=SC2086` directives already sitting in those blocks were, until this
+      # step existed, addressed to a shellcheck that never ran.
+      #
+      # zizmor and pinact (the `workflows` job) do not cover this: pinact reads `uses:` refs and
+      # zizmor audits workflow security posture. Neither shellchecks a `run:` body. actionlint does,
+      # by extracting each block and handing it to shellcheck, and it lives here rather than in the
+      # `workflows` job because linting shell is this job's remit.
+      #
+      # Two vacuity guards, because this step's whole value is the shellcheck integration:
+      #   1. actionlint SKIPS that integration silently when shellcheck is not on PATH — it still
+      #      prints nothing and exits 0. ubuntu-latest ships shellcheck, but "ships it today" is not
+      #      a guarantee, so its absence is made a failure rather than a quiet downgrade.
+      #   2. Invoked with no file arguments, actionlint scans .github/workflows/ itself and exits 3
+      #      with "no YAML file was found" on an empty or absent directory (verified, v1.7.7) — so
+      #      the scope cannot shrink to nothing and still report green. It is deliberately NOT given
+      #      the `workflows` job's $WORKFLOW_FILES list: that list exists to keep the PIN check off
+      #      templates/github/workflows/**, a constraint actionlint does not share, and re-using it
+      #      would couple this job to another job's environment for no benefit.
+      # Installed with `go install`, like shfmt above and pinact below: no new action in the trust set.
+      - name: "Lint the shell inside workflow run: blocks (actionlint)"
+        run: |
+          set -eu
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            echo "shellcheck is not on PATH — actionlint would silently skip the shellcheck" >&2
+            echo "integration and pass without checking a single run: block" >&2
+            exit 1
+          fi
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint" -shellcheck shellcheck
+
+  tests:
+    name: Hook + gate tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run test suite
+        run: bash tests/run.sh
+
+  # Hard rule 9 is "never commit secrets". Until this job existed, NOTHING IN CI CHECKED: gitleaks
+  # ran only from .pre-commit-config.yaml, at commit time, on a machine where the contributor had
+  # run `pre-commit install`. A contributor who never ran it got no secret scanning anywhere, and
+  # no gate could tell the difference.
+  #
+  # "Run pre-commit in CI" would NOT have closed that hole. The upstream gitleaks hook is
+  # `gitleaks protect --verbose --redact --staged` with `pass_filenames: false`: it reads the
+  # STAGED DIFF and ignores the file list pre-commit hands it, so under `pre-commit run --all-files`
+  # (nothing staged) it scans an empty diff and reports Passed. Measured here — a planted `ghp_…`
+  # token was invisible to `--all-files` and caught immediately once staged. This job therefore runs
+  # `gitleaks detect`, which scans the repository and its history rather than a diff.
+  secrets:
+    name: Scan for committed secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+          # A history scan of the default depth-1 clone examines ONE commit and reports "no leaks
+          # found" exactly as loudly as a full one. The whole point of scanning history is that a
+          # secret committed and then deleted is still in the repository.
+          fetch-depth: 0
+
+      # Three guards, because a secret scan's failure mode is a confident green:
+      #   1. A shallow (or absent) checkout shrinks the history scan to nothing — made fatal, not
+      #      silently narrowed. A repo with no commits is refused for the same reason.
+      #   2. A CANARY: a token planted at run time must be DETECTED before any clean verdict is
+      #      believed. This is what a wrong config, a ruleset change or a broken install would
+      #      otherwise turn into a permanent, meaningless pass.
+      #   3. Both scan modes run: `detect` over every commit in history, and `--no-git` over the
+      #      tree as checked out (content reachable only through a merge commit is not in
+      #      `git log -p` output).
+      # gitleaks is installed with `go install` at the SAME version .pre-commit-config.yaml pins, so
+      # the commit-time hook and this gate share one ruleset — and, as with shfmt/pinact/actionlint,
+      # no new action joins the trust set.
+      - name: Scan the repository and its history for secrets (gitleaks)
+        run: |
+          set -eu
+
+          shallow="$(git rev-parse --is-shallow-repository 2>/dev/null || echo unknown)"
+          if [ "$shallow" != "false" ]; then
+            echo "not a full git checkout (is-shallow-repository said '$shallow') — a history scan" >&2
+            echo "here would certify one commit, or none; restore fetch-depth: 0 on the checkout" >&2
+            exit 1
+          fi
+          commits="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
+          if [ "$commits" -lt 1 ]; then
+            echo "no commits to scan — refusing to certify an empty history" >&2
+            exit 1
+          fi
+          echo "$commits commit(s) of history in scope"
+
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          leaks="$(go env GOPATH)/bin/gitleaks"
+
+          # The canary is ASSEMBLED FROM FRAGMENTS and planted OUTSIDE the repository: this file is
+          # itself inside the scans below, so a secret-shaped literal here would flag the workflow
+          # (and hooks/block-secrets.sh refuses to write one in the first place).
+          canary="$(mktemp -d)"
+          trap 'rm -rf "$canary"' EXIT
+          lead="gh"
+          lead="${lead}p_"
+          rest="016CFE1AbB2cC3dD4eE5fF6gG7hH8iI9jJ0k"
+          printf '%s%s\n' "$lead" "$rest" >"$canary/planted"
+          # Exit status 1 exactly — gitleaks' "leaks found". A bare `if !` would accept 127 (binary
+          # missing) and 2 (config error) as proof the scanner works, which is the opposite of what
+          # this guard is for.
+          canary_rc=0
+          "$leaks" detect --no-git --source "$canary" --redact --no-banner || canary_rc=$?
+          if [ "$canary_rc" -ne 1 ]; then
+            echo "the canary scan exited $canary_rc, not 1 (gitleaks' leaks-found status): it either" >&2
+            echo "reported a file holding a planted credential clean, or never ran — so the scans" >&2
+            echo "below would prove nothing, and this is a failure rather than a green run" >&2
+            exit 1
+          fi
+          echo "canary detected: the scanner and its ruleset are live"
+
+          "$leaks" detect --source . --redact --no-banner -v
+          "$leaks" detect --no-git --source . --redact --no-banner -v
+
+  # Hard rule 8 / ci-cd.md §1 (Workflows → zizmor) and §4 ("Maintain pins with `pinact run`, and
+  # `pinact run --check` as a gate"). Until this job existed the kit's own pins were maintained by
+  # hand and nothing objected when a new `uses:` arrived unpinned — the standard was documented and
+  # unenforced in the one repo that publishes it.
+  workflows:
+    name: Lint workflows (pinact + zizmor)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      # SCOPE — and why it is deliberately not the whole repo: templates/github/workflows/** ships
+      # TAG-pinned (`@v7`) BY DESIGN, because an adopter runs `pinact run` once against their own
+      # repo after adoption. A repo-wide pin check would fail on files that are correct. Both tools
+      # below are pointed at the list this step builds, and at nothing else.
+      #
+      # The empty list is the failure mode that matters here. `pinact run` over zero files exits 0
+      # — verified against pinact v4.1.1 with both an empty and an absent .github/workflows — so a
+      # scoped check whose scope stops matching certifies nothing while reporting green. That is
+      # strictly worse than no check, so the count guard below and the re-guard in each consumer
+      # step turn it into a failure. (zizmor already errors on an empty collection; pinact does
+      # not, and the guard covers both regardless of which tool changes behaviour.)
+      - name: Enumerate the kit's own workflow files
+        run: |
+          set -eu
+          files=""
+          count=0
+          for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$f" ] || continue
+            files="${files:+$files }$f"
+            count=$((count + 1))
+          done
+          if [ "$count" -eq 0 ]; then
+            echo "no workflow files under .github/workflows/ — refusing to certify an empty set" >&2
+            exit 1
+          fi
+          echo "$count workflow file(s) in scope: $files"
+          echo "WORKFLOW_FILES=$files" >>"$GITHUB_ENV"
+
+      # `--verify` also asserts that each `# vX.Y.Z` comment names the tag that SHA really is. A pin
+      # whose comment lies is the review failure mode CVE-2025-30066 turned on: the diff reads as a
+      # routine version bump while the SHA points somewhere else entirely.
+      # Installed with `go install` rather than a fifth pinned action — the shell job already
+      # installs shfmt this way, and it adds no new action to the trust set.
+      - name: Every action is SHA-pinned (pinact)
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # contents:read only; --verify resolves tags via the API
+        run: |
+          set -eu
+          if [ -z "${WORKFLOW_FILES:-}" ]; then
+            echo "WORKFLOW_FILES is empty — the enumerate step did not run or matched nothing" >&2
+            exit 1
+          fi
+          go install github.com/suzuki-shunsuke/pinact/v4/cmd/pinact@v4.1.1
+          # shellcheck disable=SC2086 # deliberate word-split: WORKFLOW_FILES is a space-joined list
+          "$(go env GOPATH)/bin/pinact" run --check --verify $WORKFLOW_FILES
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+
+      # ci-cd.md §6 spells this `uvx zizmor`, so it runs exactly that. It does NOT take §6's
+      # `--format sarif` + upload path: SARIF lands findings in the code-scanning tab as
+      # annotations, which does not fail the job — and §1 lists zizmor as a *gate*. Uploading SARIF
+      # would also need `security-events: write`, elevating this job above the contents:read floor
+      # to buy a weaker verdict.
+      #
+      # GH_TOKEN puts zizmor in online mode; without it, it silently drops the audits that need the
+      # API (known-vulnerable-actions among them) and still reports "No findings to report".
+      # --strict-collection turns a workflow zizmor cannot parse into a failure instead of a warning
+      # plus a silent skip. .github/dependabot.yml is in scope on purpose: zizmor's
+      # dependabot-cooldown audit is what keeps the cooldown in that file from being dropped.
+      - name: Static analysis of the workflows (zizmor)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          if [ -z "${WORKFLOW_FILES:-}" ]; then
+            echo "WORKFLOW_FILES is empty — the enumerate step did not run or matched nothing" >&2
+            exit 1
+          fi
+          # shellcheck disable=SC2086 # deliberate word-split: WORKFLOW_FILES is a space-joined list
+          uvx zizmor@1.28.0 --strict-collection $WORKFLOW_FILES .github/dependabot.yml
+
+  # The ONE name branch protection requires (ci-cd.md §4, "one stable required-status check").
+  # Everything above is deliberately NOT required directly: a job added later would default to
+  # non-blocking, and a required job that is skipped reports "success" to branch protection.
+  # So this job runs on `always()` and asserts the results explicitly rather than relying on
+  # `needs:` to fail it — a bare `needs:` list does not fail on a skipped or cancelled dependency.
+  ci-required:
+    name: ci-required
+    needs: [docs, skills, shell, tests, secrets, workflows]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {} # aggregates results only — no checkout, no token
+    steps:
+      - name: Verify every gate succeeded
+        env:
+          # Enum values only (success/failure/cancelled/skipped) — never attacker-controlled text.
+          RESULTS: ${{ join(needs.*.result, ',') }}
+          EXPECTED: 6 # bump when a job is added to `needs:` above; a stale count fails loudly
+        run: |
+          set -f # RESULTS is split on commas below; keep the shell from globbing the fields
+          echo "gate results: ${RESULTS:-<empty>}"
+          seen=0
+          IFS=','
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then
+              echo "a required gate reported '$result' — see the jobs above" >&2
+              exit 1
+            fi
+            seen=$((seen + 1))
+          done
+          unset IFS
+          # Guards the vacuous pass: no results at all, or a job silently dropped from `needs:`.
+          if [ "$seen" -ne "$EXPECTED" ]; then
+            echo "expected $EXPECTED gate results, got $seen — update ci-required's needs/EXPECTED" >&2
+            exit 1
+          fi
+          echo "all $seen required gates passed"

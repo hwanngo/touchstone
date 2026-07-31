@@ -3,7 +3,7 @@ name: rust-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any Rust code (.rs files, Cargo.toml) in a touchstone repo — rustup-pinned toolchain, rustfmt, clippy -D warnings, cargo test/nextest, thiserror/anyhow, tokio. Invoke before adding deps, touching unsafe, editing tests, or changing release/build settings. Not for cross-cutting supply-chain (security-standards) or pipeline (ci-cd-standards) concerns.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

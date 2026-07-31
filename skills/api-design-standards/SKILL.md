@@ -3,7 +3,7 @@ name: api-design-standards
 description: Use when designing or changing an HTTP/REST, GraphQL, or gRPC API — endpoints, request/response shapes, error formats, pagination, versioning, or the OpenAPI/proto schema — in a touchstone repo. Invoke before adding or modifying a public API surface.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -24,7 +24,7 @@ Full standard: **`standards/design/api-design.md`** in the touchstone repo. Load
 - gRPC: never reuse/renumber proto fields — additive only; gate with buf breaking.
 
 ## Don't get burned
-- AuthN/AuthZ, rate limiting, input validation → `app-security.md`. Timeouts/retries → `resilience.md`.
+- AuthN/AuthZ, rate limiting, input validation → `standards/practices/app-security.md`. Timeouts/retries → `standards/design/resilience.md`.
 - GraphQL: depth/complexity limits, dataloader for N+1, no prod introspection _(scale-up)_.
 
 ## Done

@@ -1,0 +1,20 @@
+# The fixed style: prose lives in a block ABOVE, separated by a blank line, and exactly one short
+# line sits directly above the recipe. Note this paragraph ends in a full stop.
+
+# install deps + git hooks
+setup:
+    pre-commit install
+
+# Gates run STRICTLY for each stack present (a real failure fails the recipe); absent stacks are
+# skipped.
+
+# lint every stack present in this repo
+lint:
+    echo lint
+
+# no comment at all is fine — just renders the recipe name alone
+build:
+    echo build
+
+default:
+    @just --list

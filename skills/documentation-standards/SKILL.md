@@ -1,9 +1,9 @@
 ---
 name: documentation-standards
-description: Use when writing or updating a README, docs/, runbooks, API/reference docs, diagrams, docstrings, or the changelog in a touchstone repo — anything docs-as-code. Triggers on README.md, docs/**, *.mmd/mermaid blocks, CHANGELOG.md, docstring/comment edits. Boundary: ADR *process* lives in collaboration-standards, *when* to ADR in architecture; runbook/observability content in devops-standards; API contract in api-design-standards.
+description: "Use when writing or updating a README, docs/, runbooks, API/reference docs, diagrams, docstrings, or the changelog in a touchstone repo — anything docs-as-code. Triggers on README.md, docs/**, *.mmd/mermaid blocks, CHANGELOG.md, docstring/comment edits. Boundary: ADR *process* lives in collaboration-standards, *when* to ADR in architecture; runbook/observability content in devops-standards; API contract in api-design-standards."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -27,10 +27,10 @@ This skill inlines the load-bearing rules so it stays useful when installed stan
   tsdoc / `go vet` / clippy), not review nags.
 
 ## Defer, don't restate
-- ADR **process** → `collaboration.md` §6; *when* to ADR → `architecture.md` §4.
-- API **contract** (OpenAPI/proto/SDL source of truth) → `api-design.md`.
-- Runbooks / SLOs / observability → `devops.md` §7–8.
-- `CHANGELOG.md` (Keep a Changelog, generated from Conventional Commits) → `ci-cd.md` §11.
+- ADR **process** → `standards/practices/collaboration.md` §6; *when* to ADR → `standards/design/architecture.md` §4.
+- API **contract** (OpenAPI/proto/SDL source of truth) → `standards/design/api-design.md`.
+- Runbooks / SLOs / observability → `standards/platform/devops.md` §7–8.
+- `CHANGELOG.md` (Keep a Changelog, generated from Conventional Commits) → `standards/platform/ci-cd.md` §11.
 
 ## Done
 README quickstart CI-executed · reference generated + built warnings-as-error · Mermaid diagrams-as-code ·

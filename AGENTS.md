@@ -27,9 +27,12 @@ working in a repo that follows **touchstone**. Humans: see [`standards/`](standa
    digest-pinned. Keep any PWA (manifest + service worker) working.
 7. **Use the latest stable dependency versions**; treat advisories as priority work.
 8. **CI is hardened:** pin Actions to SHA, least-privilege `permissions:`, OIDC over static keys.
-9. **Never commit** secrets, generated artifacts, per-developer AI-assistant scratch/settings, or
-   AI-generated TDD/SDD planning docs. Shared, reviewed rule files (`AGENTS.md` + the per-tool
-   pointers) ARE committed — see [standards/practices/collaboration.md](standards/practices/collaboration.md).
+9. **Never commit** secrets, per-developer AI-assistant scratch/settings, or AI-generated
+   TDD/SDD planning docs. Generated artifacts stay out of git too, with one sanctioned
+   exception: a deterministic file, marked as generated, whose freshness CI enforces by
+   regenerating it and failing on any diff (e.g. `skills/CATALOG.md`). Shared, reviewed rule
+   files (`AGENTS.md` + the per-tool pointers) ARE committed — see
+   [standards/practices/collaboration.md](standards/practices/collaboration.md).
 10. **Don't disable the guardrails.** If this repo ships touchstone agent hooks (`.claude/hooks/`),
     leave them on; never use `git --no-verify` or a bare `git push --force`.
 

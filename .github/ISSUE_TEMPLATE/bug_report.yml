@@ -1,0 +1,61 @@
+# touchstone's own bug form. Adapted from templates/github/ISSUE_TEMPLATE/bug_report.yml:
+# the kit is bash + markdown, so the fields that matter are which surface misbehaved, the pinned
+# kit version, and the shell/OS — macOS still ships bash 3.2, which is the kit's floor and the
+# source of most portability bugs.
+name: Bug report
+description: A hook, gate, script, or template does not behave as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security issues do **not** belong here — report them privately via
+        [Report a vulnerability](https://github.com/hwanngo/touchstone/security/advisories/new).
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which part of the kit?
+      options:
+        - Agent hook (hooks/)
+        - Gate or script (scripts/)
+        - Template (templates/)
+        - Standards doc (standards/)
+        - Skill (skills/)
+        - Adoption (bootstrap.sh / init.sh / submodule setup)
+        - Not sure
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you observed, and what the docs led you to expect instead.
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows it. Paste the exact command and its output.
+      placeholder: |
+        1. …
+        2. …
+        3. observed output:
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: touchstone version
+      description: The VERSION file or the tag your .touchstone.toml pins.
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes:
+      label: OS and shell
+      description: "e.g. macOS 15 / bash 3.2.57, or Ubuntu 24.04 / bash 5.2 — run: bash --version"
+    validations: { required: true }
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Confirmations
+      options:
+        - label: This is reproducible with the kit's own gates enabled, not only with them disabled or bypassed.
+          required: true

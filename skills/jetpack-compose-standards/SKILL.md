@@ -3,7 +3,7 @@ name: jetpack-compose-standards
 description: Use when building native-Android UI with Jetpack Compose in a touchstone repo — composables, state & recomposition, unidirectional data flow, ViewModel + StateFlow, Navigation Compose, Material 3, side effects, and Compose testing. Triggers on `@Composable` functions, `androidx.compose`/compose-bom in build.gradle(.kts), `setContent`/`NavHost`, Material 3 UI. For Kotlin-language rules (null-safety, coroutines, Gradle, JUnit) use the java-kotlin skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

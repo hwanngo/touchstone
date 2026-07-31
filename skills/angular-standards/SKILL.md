@@ -3,7 +3,7 @@ name: angular-standards
 description: Use when building Angular (v18/19+) apps in a touchstone repo — standalone components, signals, change detection, DI, routing, RxJS, forms, HttpClient, control flow, state. Triggers on *.component.ts, angular.json, `@angular/*` in package.json. Language-level TS rules live in the typescript skill; for React/Nuxt use those skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

@@ -1,9 +1,26 @@
-# Drop-in [tool.*] sections for a uv-managed project — see standards/languages/python.md.
+# Drop-in sections for a uv-managed project — see standards/languages/python.md.
 # Merge into your pyproject.toml.
+
+# The tools `just lint` / `just test` / `just ci` actually invoke. Without this group `uv sync`
+# installs nothing extra and the very first `just lint` dies with `Failed to spawn: ruff` — the
+# gate's own toolchain has to be a declared dependency, not something the adopter infers from an
+# error message. uv installs the `dev` group by default (PEP 735), so `just setup` is enough.
+# pyright and pip-audit stay out on purpose: the CI template runs them via `uvx`, unpinned to the
+# project's resolution.
+[dependency-groups]
+dev = [
+    "ruff>=0.16.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
 
 [tool.ruff]
 target-version = "py312"   # gates UP/FA rewrites to your supported floor
 line-length = 88
+# The vendored kit is a pinned submodule gated by its own CI. ruff formats Python inside Markdown
+# fences too, so without this a `ruff format .` rewrites tracked files inside the pin. `just lint`
+# and `just fmt` pass `--extend-exclude .touchstone` as well; this covers a bare `ruff` invocation.
+extend-exclude = [".touchstone"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "C4", "UP", "SIM", "PT", "S", "RUF",
@@ -15,7 +32,7 @@ select = ["E", "F", "W", "I", "B", "C4", "UP", "SIM", "PT", "S", "RUF",
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --strict-config"
-testpaths = ["tests"]
+testpaths = ["tests"]                # never collect out of .touchstone/ — the vendored kit
 xfail_strict = true              # an xfail that passes = failure
 filterwarnings = ["error"]       # deprecations become red CI (add a documented allowlist as needed)
 markers = [

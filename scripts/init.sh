@@ -87,16 +87,26 @@ KIT_REL="${KIT#"$TARGET"/}"
 case "$KIT_REL" in /* | "$KIT") KIT_REL=".touchstone" ;; esac
 
 # --- universal ---
-# AGENTS.md is the one instruction file we copy to the target root; rewrite its standards/ links to
-# the vendored kit so they resolve in the adopted repo (the docs live in $KIT_REL/standards/).
+# AGENTS.md is the one instruction file we copy to the target root. The kit ships a single copy
+# whose standards/ paths are root-relative (true in the kit); here they are rewritten to the
+# vendored kit so they resolve in the adopted repo, where the docs live in $KIT_REL/standards/.
+# All THREE lexical contexts are rewritten, not just link destinations:
+#   `](standards/`  link targets      — resolve to a real file
+#   `[standards/`   link texts        — otherwise the displayed path contradicts the target
+#   '`standards/'   code spans        — the "Where things are" routing table, which is how an
+#                                       agent picks a standard to open; unrewritten it names
+#                                       directories that do not exist in an adopter
+# Verified against the shipped AGENTS.md: every standards/ occurrence is in one of those three
+# contexts, so there are no false positives. tests/gates/init-adopt-links.test.sh asserts on the
+# INSTALLED copy that none survives and that every rewritten target exists.
 if [ -e "$TARGET/AGENTS.md" ] && [ "$FORCE" -eq 0 ]; then
   say "skip   AGENTS.md (exists)"
 elif [ "$DRY" -eq 1 ]; then
   say "would  AGENTS.md"
 else
   cp "$KIT/AGENTS.md" "$TARGET/AGENTS.md"
-  sed -i.bak -E "s#\]\(standards/#](${KIT_REL}/standards/#g" "$TARGET/AGENTS.md" && rm -f "$TARGET/AGENTS.md.bak"
-  say "place  AGENTS.md (standards links → ${KIT_REL}/standards/)"
+  sed -i.bak -E "s#(\]\(|\[|\`)standards/#\1${KIT_REL}/standards/#g" "$TARGET/AGENTS.md" && rm -f "$TARGET/AGENTS.md.bak"
+  say "place  AGENTS.md (standards link targets, texts and code spans → ${KIT_REL}/standards/)"
 fi
 
 # per-tool pointer files — generated single-source, all defer to AGENTS.md (which routes to the
@@ -105,7 +115,7 @@ gen CLAUDE.md <<'EOF'
 # CLAUDE.md
 
 This repository follows **touchstone**. The canonical instructions live in [`AGENTS.md`](AGENTS.md)
-(it routes to the relevant `standards/` doc) — read it first.
+(it routes to the relevant standard) — read it first.
 
 @AGENTS.md
 EOF
@@ -149,6 +159,13 @@ place templates/dependabot.yml .github/dependabot.yml
 place templates/github/CODEOWNERS .github/CODEOWNERS
 place templates/github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md
 place templates/SECURITY.md SECURITY.md
+# collaboration.md's repo-meta checklist requires PR/issue templates, and the kit ships three issue
+# forms — but nothing placed them, so every adopter silently ended up without the issue half of a
+# checklist item the kit enforces. place() copies one file and mkdir -p's its parent, so the forms
+# are listed individually rather than copied as a tree.
+place templates/github/ISSUE_TEMPLATE/bug_report.yml .github/ISSUE_TEMPLATE/bug_report.yml
+place templates/github/ISSUE_TEMPLATE/feature_request.yml .github/ISSUE_TEMPLATE/feature_request.yml
+place templates/github/ISSUE_TEMPLATE/config.yml .github/ISSUE_TEMPLATE/config.yml
 place templates/github/workflows/ci.yml .github/workflows/ci.yml
 
 STACKS=""
@@ -187,6 +204,14 @@ if [ "$WITH_HOOKS" -eq 1 ]; then
     place "hooks/$(basename "$h")" "$dest"
     [ "$DRY" -eq 0 ] && chmod +x "$TARGET/$dest" 2>/dev/null
   done
+  # hooks/lib/*.sh — shared libraries the hooks above source at runtime (e.g. secret-paths.sh).
+  # Without these, a sourced-but-missing library degrades the hook silently.
+  for h in "$KIT"/hooks/lib/*.sh; do
+    [ -e "$h" ] || continue
+    dest=".claude/hooks/lib/$(basename "$h")"
+    place "hooks/lib/$(basename "$h")" "$dest"
+    [ "$DRY" -eq 0 ] && chmod +x "$TARGET/$dest" 2>/dev/null
+  done
   # never clobber an existing settings file — place if absent, else tell the user to merge
   if [ -e "$TARGET/.claude/settings.json" ]; then
     say "note   merge templates/claude-settings.json into .claude/settings.json"
@@ -207,7 +232,7 @@ else
 # Tracks which touchstone version/stacks/level this repo adopts. See touchstone/scripts/check-sync.sh.
 version = "$VERSION"
 stacks = [$(echo "$STACKS" | tr ' ' '\n' | grep -v '^$' | sed 's/.*/"&"/' | paste -sd, -)]
-level = 1            # maturity level you target (see standards/self-audit.md): 1=Hygiene .. 4=Scale-up
+level = 1            # maturity level you target (see ${KIT_REL}/standards/self-audit.md): 1=Hygiene .. 4=Scale-up
 waivers = []         # documented, reviewed exceptions
 EOF
   say "place  .touchstone.toml"
@@ -221,6 +246,9 @@ Next:
   1. Fill in the Project block of AGENTS.md (name, description, stack).
   2. Pin GitHub Actions to SHA:  pinact run
   3. Install hooks:  pre-commit install   (and run: pre-commit run --all-files)
-  4. Score the repo against standards/self-audit.md and close gaps.
+  4. Score the repo against ${KIT_REL}/standards/self-audit.md and close gaps.
 EOF
-[ "$WITH_HOOKS" -eq 1 ] && echo "  5. Review .claude/settings.json + .claude/hooks/ (agent hooks run shell on your machine)."
+if [ "$WITH_HOOKS" -eq 1 ]; then
+  echo "  5. Review .claude/settings.json + .claude/hooks/ (agent hooks run shell on your machine)."
+fi
+exit 0

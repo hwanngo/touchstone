@@ -1,9 +1,9 @@
 ---
 name: solidity-standards
-description: Use when writing, reviewing, testing, or deploying Solidity / EVM smart contracts in a touchstone repo — security-first patterns, Foundry toolchain, fuzz/invariant testing, gas, and upgradeability. Triggers on .sol files, foundry.toml, hardhat.config. Boundary: on-chain code only — off-chain app/API auth lives in app-security-standards, CI secret-scanning in security-standards.
+description: "Use when writing, reviewing, testing, or deploying Solidity / EVM smart contracts in a touchstone repo — security-first patterns, Foundry toolchain, fuzz/invariant testing, gas, and upgradeability. Triggers on .sol files, foundry.toml, hardhat.config. Boundary: on-chain code only — off-chain app/API auth lives in app-security-standards, CI secret-scanning in security-standards."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

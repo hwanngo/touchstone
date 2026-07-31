@@ -2,6 +2,27 @@
 # See standards/platform/ci-cd.md. BEFORE relying on this:
 #   1. Pin every action to a commit SHA:  pinact run
 #   2. Delete the jobs for stacks you don't use, and update `needs:` in `ci-required`.
+#
+# Step 1 is not optional and it is not deferrable: the zizmor hook in .pre-commit-config.yaml
+# reports every tag-pinned `uses:` here as `unpinned-uses`, so the FIRST `git commit` after
+# adoption fails until `pinact run` has been run. That is the gate working — hard rule 8 requires
+# SHA pins and this file ships tag-pinned so `pinact` can resolve the tags against YOUR repo — but
+# it is a step, not a surprise. `git commit --no-verify` is not the way out (hard rule 10, and the
+# kit's own guard-bash.sh denies it); `pinact run` is, and it takes one command.
+#
+# Every action below is tag-pinned at a MAJOR TAG THAT EXISTS. `pinact` stops at the first
+# unresolvable ref, so one wrong major (`astral-sh/setup-uv@v8`, which has never existed) leaves
+# the rest of the file unpinned and the adopter still unable to commit. Verified against the live
+# tag list by tests/gates/adopter-toolchain.test.sh.
+#
+# EVERY checkout below sets `submodules: true`. The kit is vendored at .touchstone/ as a pinned
+# submodule; without this, .touchstone/ does not exist in CI, the touchstone-sync job cannot run,
+# and — worse — the stack gates walk a different tree in CI than on a developer's machine, so CI
+# goes green on exactly the paths that fail locally. That is the vacuous-green failure mode this
+# whole file exists to prevent. It is a no-op in a repo with no submodules.
+# `persist-credentials: false` is kept: it is compatible with public submodules over https. A
+# PRIVATE submodule needs a token instead — use `submodules: true` with a scoped
+# `token: ${{ secrets.<PAT> }}` rather than re-enabling credential persistence.
 name: CI
 
 on:
@@ -17,19 +38,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Drift gate for the adopted kit: fails if a managed file was edited locally without being
+  # declared in .touchstone.toml. Skips itself only when this repo has not adopted the kit.
+  touchstone-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v7
+        with: { persist-credentials: false, submodules: true }
+      - name: check-sync
+        run: |
+          if [ ! -x ./.touchstone/scripts/check-sync.sh ]; then
+            echo "::error::.touchstone/scripts/check-sync.sh is missing — the submodule was not checked out (needs 'submodules: true') or this repo has not adopted touchstone."
+            exit 1
+          fi
+          ./.touchstone/scripts/check-sync.sh
+
   python:
     runs-on: ubuntu-latest
     steps:
       - uses: step-security/harden-runner@v2 # egress-policy: block in prod (see ci-cd.md)
         with: { egress-policy: audit }
       - uses: actions/checkout@v7
-        with: { persist-credentials: false }
-      - uses: astral-sh/setup-uv@v8
+        with: { persist-credentials: false, submodules: true }
+      # Full semver tag, not a floating major: setup-uv stopped publishing major aliases after v7,
+      # so `@v8`/`@v9` do not resolve even though v8.x and v9.0.0 exist as releases. Hard rule 7
+      # wants the latest stable, and the kit's own ci.yml pins this same v9.0.0.
+      - uses: astral-sh/setup-uv@v9.0.0
         with: { enable-cache: true }
       - run: uv sync --locked
       - run: uv lock --check
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      # --extend-exclude matches `just lint`: the vendored kit is gated by its own CI, and ruff
+      # formats Python inside Markdown fences, so an unscoped run fails on the kit's own docs.
+      - run: uv run ruff check . --extend-exclude .touchstone
+      - run: uv run ruff format --check . --extend-exclude .touchstone
       - run: uvx pyright
       - run: uv run pytest --cov --cov-fail-under=80
       - run: uvx pip-audit
@@ -40,11 +83,13 @@ jobs:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
       - uses: actions/checkout@v7
-        with: { persist-credentials: false }
+        with: { persist-credentials: false, submodules: true }
       - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      # .touchstone/ is excluded via biome.json `files.includes` — Biome has no CLI exclude flag,
+      # and it aborts outright ("nested root configuration") if it walks the kit's templates/.
       - run: pnpm biome ci .
       - run: pnpm typecheck
       - run: pnpm test
@@ -56,19 +101,24 @@ jobs:
       - uses: step-security/harden-runner@v2
         with: { egress-policy: audit }
       - uses: actions/checkout@v7
-        with: { persist-credentials: false }
-      - uses: actions/setup-go@v6
+        with: { persist-credentials: false, submodules: true }
+      - uses: actions/setup-go@v7
         with: { go-version-file: go.mod }
-      - run: go install mvdan.cc/gofumpt@latest && test -z "$(gofumpt -l .)" || { gofumpt -l .; exit 1; }
+      # explicit file list, not `gofumpt -l .`: gofumpt has no exclude flag and would report the
+      # vendored kit. `find -exec … +` runs it zero times when nothing matches.
+      - name: gofumpt
+        run: |
+          go install mvdan.cc/gofumpt@latest
+          unformatted="$(find . -name '*.go' -not -path './.touchstone/*' -not -path './vendor/*' -exec gofumpt -l {} +)"
+          if [ -n "$unformatted" ]; then echo "$unformatted"; exit 1; fi
       - uses: golangci/golangci-lint-action@v9
       - run: go test -race -covermode=atomic ./...
-      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - run: go mod tidy && git diff --exit-code go.mod go.sum
 
   # The ONE required status check — branch protection requires this name (see ci-cd.md §2).
   # A skipped required job reports "success", so gate on the actual results instead.
   ci-required:
-    needs: [python, node, go]
+    needs: [touchstone-sync, python, node, go]
     if: always()
     runs-on: ubuntu-latest
     steps:

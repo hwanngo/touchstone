@@ -1,0 +1,16 @@
+# The pre-fix template's comment style: a multi-line explanation sits directly above the recipe, so
+# just takes its LAST line as the --list doc string and an adopter's first command renders a
+# mid-sentence tail fragment.
+setup:
+    pre-commit install
+
+# Gates run STRICTLY for each stack present (a real failure fails the recipe); absent stacks are
+# skipped. A linter that is missing while its stack IS present fails too, on
+# purpose: a gate that could not run has not passed.
+lint:
+    echo lint
+
+# a doc string that is a whole sentence but far too long to be a doc string, running well past any
+# reasonable width for the aligned two-column --list output an adopter actually reads.
+build:
+    echo build

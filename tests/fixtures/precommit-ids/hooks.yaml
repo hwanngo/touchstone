@@ -1,0 +1,9 @@
+# Stand-in for a repo's .pre-commit-hooks.yaml, in the exact shape upstream ships.
+- id: ruff
+  name: ruff
+  entry: ruff check --force-exclude
+  language: python
+- id: ruff-format
+  name: ruff-format
+  entry: ruff format --force-exclude
+  language: python

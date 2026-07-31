@@ -1,0 +1,9 @@
+# `repo: local` hooks define their ids inline; there is no upstream file to resolve them against,
+# so the parser must emit no remote triples here — and the caller must call that vacuous, not clean.
+repos:
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system

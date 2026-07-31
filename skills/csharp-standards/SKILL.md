@@ -3,7 +3,7 @@ name: csharp-standards
 description: Use when writing, reviewing, testing, building, or configuring any C#/.NET code in a touchstone repo — triggers on .cs, .csproj, .sln, Directory.Packages.props, global.json. Invoke before adding NuGet deps, editing tests, or touching async/nullable code. Not for Go/Python services — see those language skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

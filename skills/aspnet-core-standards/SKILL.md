@@ -3,7 +3,7 @@ name: aspnet-core-standards
 description: Use when building or reviewing an ASP.NET Core (.NET 8/9) HTTP service in a touchstone repo — minimal APIs vs controllers, DI lifetimes, options/config, ProblemDetails, EF Core, auth policies, middleware, resilience, integration tests. Triggers on `Microsoft.AspNetCore` in a .csproj, `WebApplication.CreateBuilder` / `app.MapGet` in Program.cs, `[ApiController]` controllers, `DbContext`. C#-language rules (nullable, async, analyzers, packaging) live in the csharp skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -30,7 +30,7 @@ This skill inlines the load-bearing rules so it stays useful when installed stan
 - **Outbound HTTP via `IHttpClientFactory`** typed clients (never `new HttpClient()`); add `AddStandardResilienceHandler()` (retry/timeout/circuit-breaker).
 
 ## Defer (don't duplicate)
-- C# language (nullable, async, analyzers, CPM, packaging) → `../languages/csharp.md`; API contract/errors → `../design/api-design.md`; schema + EF migrations → `../platform/database.md`; authZ policy/OWASP → `../practices/app-security.md`; OpenTelemetry → `../platform/observability.md`; retry/timeout budgets → `../design/resilience.md`; test pyramid → `../practices/testing-strategy.md`.
+- C# language (nullable, async, analyzers, CPM, packaging) → `../../standards/languages/csharp.md`; API contract/errors → `../../standards/design/api-design.md`; schema + EF migrations → `../../standards/platform/database.md`; authZ policy/OWASP → `../../standards/practices/app-security.md`; OpenTelemetry → `../../standards/platform/observability.md`; retry/timeout budgets → `../../standards/design/resilience.md`; test pyramid → `../../standards/practices/testing-strategy.md`.
 
 ## Done
 Minimal-API/controller endpoints thin · feature slices · scoped `DbContext`, no scoped-into-singleton · typed options `ValidateOnStart` · no repo secrets · DTO-bound + validated, `ProblemDetails` errors · EF migrations at deploy, `AsNoTracking`, N+1 guarded · deny-by-default auth, JWT validated · middleware order correct, explicit CORS · `CancellationToken` to the wire · OpenTelemetry exported · `IHttpClientFactory` + resilience handler · `WebApplicationFactory` + Testcontainers integration tests. See `standards/frameworks/aspnet-core.md`.

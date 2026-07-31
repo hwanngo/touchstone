@@ -3,7 +3,7 @@ name: elixir-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any Elixir code (.ex/.exs files, mix.exs, mix.lock) in a touchstone repo — asdf/.tool-versions pin, Hex with committed mix.lock, mix format + Credo, typespecs + Dialyzer, OTP supervision trees, {:ok,_}/{:error,_} idioms, ExUnit + Mox, mix release with runtime.exs. Invoke before adding deps, editing tests, wiring supervisors, or changing error handling. Phoenix-specific concerns (controllers, LiveView, contexts-as-web) → phoenix skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

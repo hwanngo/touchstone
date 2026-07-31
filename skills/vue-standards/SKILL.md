@@ -3,13 +3,13 @@ name: vue-standards
 description: Use when building a plain Vue 3 SPA in a touchstone repo — SFCs, reactivity, props/emits/models, Pinia, composables, Vue Router, forms, perf, a11y, testing. Triggers on .vue files, `vue` in package.json, vite.config with the Vue plugin. Language-level TS rules live in the typescript skill; for SSR/file-routing/server-routes (Nuxt) use the nuxt skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Vue 3 (framework)
 
-Full standard: **`standards/frameworks/vue.md`** (layers on `languages/typescript.md`).
+Full standard: **`standards/frameworks/vue.md`** (layers on `standards/languages/typescript.md`).
 Load-bearing rules inlined so this stays useful installed standalone:
 
 ## Always
@@ -23,7 +23,7 @@ Load-bearing rules inlined so this stays useful installed standalone:
 - **Never `export` a `reactive()`** or destructure one raw (`const { x } = reactive(s)` is dead) — use `toRefs()`/`toRef()`; destructure stores through `storeToRefs()`.
 - `reactive()` dies on reassignment — assign through a `ref`'s `.value` instead.
 - Don't mirror one ref into another with `watch` — that's a `computed`.
-- Lazy-load every route component; client route guards are UX — the **server** enforces authorization (`../practices/app-security.md`). Forms = VeeValidate + a Zod schema **shared with the API boundary** (`../design/api-design.md`).
+- Lazy-load every route component; client route guards are UX — the **server** enforces authorization (`../../standards/practices/app-security.md`). Forms = VeeValidate + a Zod schema **shared with the API boundary** (`../../standards/design/api-design.md`).
 
 ## Done
 `<script setup>` + typed macros · no reactivity loss · stable `:key` · Pinia for shared state only · routes lazy + guarded · a11y gate (vuejs-accessibility + axe) · Web Vitals budget · `pnpm test` green (Vitest + @vue/test-utils, MSW). See `standards/frameworks/vue.md`.

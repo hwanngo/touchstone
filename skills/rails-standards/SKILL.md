@@ -3,7 +3,7 @@ name: rails-standards
 description: Use when building or reviewing a Ruby on Rails 7.2/8 app in a touchstone repo — structure, ActiveRecord, strong params, routing, Hotwire, jobs, caching, security. Triggers on `rails`/`railties` in the Gemfile, `config/routes.rb`, `app/models`, `app/controllers`, `db/migrate`. Ruby-language rules live in the ruby skill; this is the framework layer.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -20,7 +20,7 @@ Full standard: **`standards/frameworks/rails.md`** (layers on `standards/languag
 - Background work on **Active Job** (Solid Queue / Sidekiq) — idempotent, pass **ids** not records, enqueue **after commit**.
 
 ## Defer (don't duplicate)
-- Schema/migrations/expand-contract → `../platform/database.md`; API contract/errors/versioning → `../design/api-design.md`; authN/authZ/OWASP → `../practices/app-security.md`; job retries/idempotency → `../design/resilience.md`; Ruby-language idioms → `../languages/ruby.md`; test strategy → `../practices/testing-strategy.md`.
+- Schema/migrations/expand-contract → `../../standards/platform/database.md`; API contract/errors/versioning → `../../standards/design/api-design.md`; authN/authZ/OWASP → `../../standards/practices/app-security.md`; job retries/idempotency → `../../standards/design/resilience.md`; Ruby-language idioms → `../../standards/languages/ruby.md`; test strategy → `../../standards/practices/testing-strategy.md`.
 
 ## Done
 thin controllers + service layer · strong params everywhere · N+1 guarded (bullet) · no business-logic callbacks · strong_migrations + expand/contract · Hotwire frontend · idempotent Active Job · brakeman/bundle-audit clean · encrypted credentials · factory_bot on real Postgres · Kamal deploy. See `standards/frameworks/rails.md`.

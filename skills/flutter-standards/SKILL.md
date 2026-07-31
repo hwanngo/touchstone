@@ -3,14 +3,14 @@ name: flutter-standards
 description: Use when building Flutter apps in a touchstone repo — widgets, Riverpod state, go_router navigation, dio/freezed networking, isolates, widget/golden tests, flavors. Triggers on .dart files, pubspec.yaml, lib/ widget trees, analysis_options.yaml. The Dart language rules live here too (no separate dart skill); for native iOS use the swift skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Flutter & Dart (framework + language)
 
 Full standard: **`standards/frameworks/flutter.md`** (carries the Dart language layer inline —
-there is no separate `dart.md`). This skill inlines the load-bearing rules so it stays useful
+there is no separate Dart language standard). This skill inlines the load-bearing rules so it stays useful
 when installed standalone in `~/.claude/skills/`:
 
 ## Always

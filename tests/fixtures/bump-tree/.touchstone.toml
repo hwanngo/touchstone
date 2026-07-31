@@ -1,0 +1,5 @@
+# Self-adoption marker. check-sync.sh keys on this file's presence.
+# version is kept in lockstep by scripts/bump-version.sh — the row in
+# tests/gates/bump-version.test.sh is what makes that promise true rather than aspirational.
+version = "0.1.0"
+level = 4

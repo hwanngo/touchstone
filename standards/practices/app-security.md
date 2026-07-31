@@ -73,28 +73,49 @@ error shape) lives in [api-design.md](../design/api-design.md).
 
 - **Object *property*-level too (API #3):** don't mass-assign or over-return fields. Allowlist
   inputs and outputs (DTOs/serializers) — never blind-bind the request body to your model.
+- **Fail closed (OWASP A10, §3).** When the check itself goes wrong — the policy service is
+  unreachable, the token parse throws, the claim is missing — **deny**. `except: pass` around an
+  authorization call, a `try` that falls through to the permissive branch, or a default `allow`
+  when the lookup returns `None` is the whole of *Mishandling of Exceptional Conditions*: the
+  system is secure only while nothing breaks. Test the error path, not just the happy path.
 - **Multi-tenant:** carry `tenant_id` in the auth context and **filter every query by it** at a
   choke point (repository layer / RLS). One missing `WHERE tenant_id` is a cross-tenant breach.
   See [database.md](../platform/database.md) for row-level security.
 
-## 3. OWASP Top 10 (2021) → control mapping
+## 3. OWASP Top 10 (2025) → control mapping
 
-Each risk maps to the standard that addresses it. This is the audit checklist.
+Each risk maps to the standard that addresses it. This is the audit checklist. The current
+revision is **OWASP Top 10:2025** (announced November 2025, final release January 2026) — it
+supersedes the 2021 list.
 
-| Risk (2021) | Control / where it lives |
+| Risk (2025) | Control / where it lives |
 |---|---|
-| A01 Broken Access Control | Deny-by-default + per-object checks (§2); IDOR/BOLA |
-| A02 Cryptographic Failures | TLS everywhere (§6); at-rest enc → [data-privacy.md](data-privacy.md) |
-| A03 Injection | Parameterized queries / ORM bindings + input validation (§4) |
-| A04 Insecure Design | Threat modeling per trust boundary (§5) |
-| A05 Security Misconfiguration | Hardened defaults; security headers → [security.md](security.md) |
-| A06 Vulnerable Components | Dependency scanning + cooldown → [security.md](security.md) |
-| A07 Auth Failures | OAuth 2.1/OIDC, argon2id, MFA, session rotation (§1) |
-| A08 Integrity Failures | SBOM, signing, provenance → [security.md](security.md) |
-| A09 Logging/Monitoring | Audit authZ failures + logins; alert; no secrets in logs |
-| A10 SSRF | Egress allowlist + block internal ranges (§4) |
+| A01 Broken Access Control | Deny-by-default + per-object checks (§2); IDOR/BOLA; **SSRF** egress allowlist (§4) |
+| A02 Security Misconfiguration | Hardened defaults; security headers → [security.md](security.md) |
+| A03 Software Supply Chain Failures | Pinning, scanning, cooldown, SBOM → [security.md](security.md) + [dependencies.md](dependencies.md) |
+| A04 Cryptographic Failures | TLS everywhere (§6); at-rest enc → [data-privacy.md](data-privacy.md) |
+| A05 Injection | Parameterized queries / ORM bindings + input validation (§4) |
+| A06 Insecure Design | Threat modeling per trust boundary (§5) |
+| A07 Authentication Failures | OAuth 2.1/OIDC, argon2id, MFA, session rotation (§1) |
+| A08 Software or Data Integrity Failures | Signing, provenance, attestation → [security.md](security.md) |
+| A09 Security Logging and Alerting Failures | Audit authZ failures + logins; **alert** on them; no secrets in logs |
+| A10 Mishandling of Exceptional Conditions | Fail closed (§2); typed error shape, no internals leaked → [api-design.md](../design/api-design.md), [resilience.md](../design/resilience.md) |
 
-**API Top 10 (2023) highlights** not covered above: **API2** Broken Auth (§1 JWT/session),
+**What moved since 2021** — if you hold an older audit, re-map it:
+
+- **SSRF is gone as its own entry.** 2021's A10 SSRF is now absorbed into **A01 Broken Access
+  Control**. The control (§4) is unchanged; only the label moved.
+- **A03 Software Supply Chain Failures is new**, expanding 2021's *Vulnerable and Outdated
+  Components* past the dependency list to build systems, CI, and distribution infrastructure.
+- **A10 Mishandling of Exceptional Conditions is new** — failing *open*, swallowed errors, and
+  logic that takes the permissive branch when something goes wrong.
+- **Renames**: *Identification and Authentication Failures* → **Authentication Failures**;
+  *Security Logging and Monitoring Failures* → **Security Logging and Alerting Failures**
+  (logging you never alert on is not a control).
+- **Rank shifts**: Security Misconfiguration #5 → **#2**; Cryptographic Failures #2 → #4;
+  Injection #3 → #5; Insecure Design #4 → #6. Broken Access Control stays **#1**.
+
+**API Top 10 (2023 — still the current API revision)** highlights not covered above: **API2** Broken Auth (§1 JWT/session),
 **API4** Unrestricted Resource Consumption → rate/size limits ([api-design.md](../design/api-design.md)),
 **API5** Broken Function-Level AuthZ → deny-by-default on admin routes (§2), **API6** Sensitive
 Business Flow abuse → bot/velocity controls _(scale-up)_, **API9** Inventory → no
@@ -110,7 +131,7 @@ undocumented/legacy endpoints in prod.
 - **Output encoding is context-aware.** Encode for the sink — HTML body vs attribute vs JS vs
   URL vs SQL are different escapes. (Browser XSS sink rules + CSP live in
   [security.md](security.md) / [react.md](../frameworks/react.md).)
-- **SSRF (A10/API7):** for any server-side fetch of a user-supplied URL, **allowlist egress**
+- **SSRF (A01 in 2025 — was its own A10 in 2021 — / API7):** for any server-side fetch of a user-supplied URL, **allowlist egress**
   destinations and **block link-local/internal ranges** (`169.254.0.0/16`, RFC1918, metadata
   endpoints). Resolve-then-check to defeat DNS rebinding; disable redirects to internal hosts.
 - **CSRF:** `SameSite` cookies are the baseline; add **per-request CSRF tokens** (double-submit
@@ -149,10 +170,14 @@ new external surface, PII handling, deserialization, or a file/URL fetched from 
 - [ ] First-party sessions: HttpOnly+Secure+SameSite cookies, server-side, rotated on priv change
 - [ ] JWTs verify sig + `aud`/`iss`/`exp`, pinned `alg` (no `none`), short TTL + refresh rotation
 - [ ] Passwords argon2id/bcrypt; MFA available and required for privileged accounts
-- [ ] AuthZ deny-by-default, enforced server-side on every request
+- [ ] AuthZ deny-by-default, enforced server-side on every request, and **failing closed** on error
 - [ ] Per-object ownership checks on every resource reference (no IDOR/BOLA); tenant-scoped queries
 - [ ] Boundary schema validation (allowlist); parameterized queries; context-aware output encoding
 - [ ] SSRF egress allowlist; CSRF tokens for cookie-auth mutations
 - [ ] STRIDE/evil-user-story model + DFD recorded as an ADR for each new trust boundary
 - [ ] Security-review trigger defined and enforced in the PR process
-- [ ] OWASP Top 10 (2021) + API Top 10 (2023) mapped to controls and reviewed
+- [ ] OWASP Top 10 (**2025**) + API Top 10 (2023) mapped to controls and reviewed
+
+---
+
+**Sources:** [OWASP Top 10:2025](https://owasp.org/Top10/2025/) · [OWASP Top 10:2025 — Introduction (what changed since 2021)](https://owasp.org/Top10/2025/0x00_2025-Introduction/) · [OWASP API Security Top 10 (2023)](https://owasp.org/API-Security/editions/2023/en/0x11-t10/)

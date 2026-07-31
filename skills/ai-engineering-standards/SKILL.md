@@ -3,7 +3,7 @@ name: ai-engineering-standards
 description: Use when building production LLM/AI features in a touchstone repo — prompts, structured outputs/tool-calling, RAG, agents, evals, safety/guardrails, cost/latency, or LLM observability. Invoke before adding any model call, writing a prompt, or designing an eval. NOT Anthropic/Claude API specifics (model IDs, pricing, prompt caching, tool-use shapes) — defer to the `claude-api` skill; per-language mechanics live in the language skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

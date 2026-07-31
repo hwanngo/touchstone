@@ -3,15 +3,15 @@ name: monorepo-standards
 description: Use when setting up or scaling a monorepo's build tooling — task graph, caching, affected/incremental builds, workspace boundaries, and release — in a touchstone repo. Triggers on turbo.json, nx.json, WORKSPACE/BUILD (Bazel/Buck2), pnpm-workspace.yaml, go.work, or an apps/ + packages/ layout. The monorepo-vs-polyrepo topology decision lives in the git-workflow skill; CI wiring in the ci-cd skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Monorepo Tooling Standards
 
 Full standard: **`standards/platform/monorepo.md`** in the touchstone repo (defers the
-monorepo-vs-polyrepo topology call to `practices/git-workflow.md` §6, CI wiring to
-`platform/ci-cd.md`, package/version policy to `practices/dependencies.md`). This skill inlines the
+monorepo-vs-polyrepo topology call to `standards/practices/git-workflow.md` §6, CI wiring to
+`standards/platform/ci-cd.md`, package/version policy to `standards/practices/dependencies.md`). This skill inlines the
 load-bearing rules so it stays useful when installed standalone in `~/.claude/skills/`:
 
 ## Always

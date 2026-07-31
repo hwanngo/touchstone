@@ -3,7 +3,7 @@ name: python-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any Python code in a repo that follows touchstone (uv, ruff, pytest, Pyright). Invoke before adding deps, editing tests, touching imports/sys.path, or changing deterministic output.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

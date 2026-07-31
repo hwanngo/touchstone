@@ -3,13 +3,13 @@ name: gin-standards
 description: Use when building a Gin (gin-gonic) HTTP service in a touchstone repo — routing, middleware, binding, handlers. Triggers on `gin-gonic/gin` import, `gin.New()`/`gin.Default()`, `*gin.Context`. Language rules live in the go skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Gin (framework)
 
-Full standard: **`standards/frameworks/gin.md`** (layers on `languages/golang.md`). Note: Gin is a
+Full standard: **`standards/frameworks/gin.md`** (layers on `standards/languages/golang.md`). Note: Gin is a
 choice — stdlib `net/http` (1.22+ ServeMux) is the default; reach for Gin for routing/middleware
 ergonomics. Rules:
 
@@ -20,7 +20,7 @@ ergonomics. Rules:
 - Pass **`c.Request.Context()`** down to services/db — never store `*gin.Context`. Thin handlers.
 
 ## Defer
-- API contract → `../design/api-design.md`; DB → `../platform/database.md`; authN/authZ → `../practices/app-security.md`; server/context basics → `../languages/golang.md`.
+- API contract → `../../standards/design/api-design.md`; DB → `../../standards/platform/database.md`; authN/authZ → `../../standards/practices/app-security.md`; server/context basics → `../../standards/languages/golang.md`.
 
 ## Done
 gofumpt/golangci-lint/`go test -race`/govulncheck green · layered DI · server timeouts + shutdown. See the doc.

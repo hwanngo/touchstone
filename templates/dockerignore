@@ -10,7 +10,10 @@ Dockerfile*
 .dockerignore
 docker-compose*.y*ml
 compose*.y*ml
-**/*.map                 # never ship source maps into an image
+# never ship source maps into an image. (The comment is on its own line on purpose: .dockerignore
+# has no inline comments — a trailing `# ...` becomes part of the pattern, which then matches
+# nothing and silently ships the very files the line claims to exclude.)
+**/*.map
 
 # deps / build output (stack-specific)
 **/node_modules

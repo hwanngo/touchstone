@@ -3,7 +3,7 @@ name: performance-standards
 description: Use when setting performance budgets, profiling a hot path, writing load/stress tests, or optimizing latency/throughput in a touchstone repo — covers the measure-first discipline, p50/p95/p99 SLOs, per-stack profilers, k6 load testing, common bottlenecks, and CI regression gates. Invoke before optimizing anything (caching mechanics live in the resilience skill; frontend CWV/bundle in the react skill).
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

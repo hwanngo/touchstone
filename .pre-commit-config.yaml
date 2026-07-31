@@ -1,0 +1,80 @@
+# touchstone's OWN pre-commit config. What adopters get is templates/pre-commit-config.yaml —
+# the multi-stack starter with Python/TypeScript/Actions blocks. This kit is bash + markdown, so
+# those blocks are dead weight here and are replaced by the three linters `just lint` runs.
+#
+# Install: `uv tool install pre-commit && pre-commit install` — hard rule 1 is Python → `uv`.
+# Run over everything: `pre-commit run --all-files`
+# Keep the `rev`s current: `pre-commit autoupdate`.
+#
+# `--all-files` does NOT exercise the gitleaks hook. Its upstream definition is
+# `gitleaks protect --verbose --redact --staged` with `pass_filenames: false`, so it reads the
+# STAGED DIFF and ignores the file list pre-commit hands it — with nothing staged it scans an
+# empty diff and reports Passed. Verified here: a planted `ghp_…` token was invisible to
+# `pre-commit run --all-files` and caught immediately once staged. Treat a green `--all-files`
+# as saying nothing at all about secrets; the hook's real guarantee is at commit time.
+#
+# WHY THE LINTERS ARE `local` HOOKS. shellcheck, shfmt and markdownlint-cli2 are invoked here with
+# the exact commands the justfile's `lint` recipe uses, against the binaries the contributor
+# already needs to run `just lint`. Pointing pre-commit at a second, separately-versioned copy of
+# each linter would let a commit pass locally and fail in CI on a version difference — the drift
+# that standards/practices/collaboration.md says pre-commit exists to prevent. The version that is
+# pinned is the one that needs pinning: markdownlint-cli2, which is fetched rather than installed.
+ci:
+  autofix_prs: true
+  autoupdate_schedule: weekly
+
+repos:
+  # Generic hygiene. tests/fixtures/ is excluded from every rewriting hook: those trees are
+  # deliberately malformed test data, and a hook that "fixes" them silently rewrites the evidence
+  # the gates are proven against.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        # .editorconfig keeps trailing whitespace in markdown (hard line breaks); strip it only
+        # where two trailing spaces are not meaningful.
+        args: [--markdown-linebreak-ext=md]
+        exclude: ^tests/fixtures/
+      - id: end-of-file-fixer
+        exclude: ^tests/fixtures/
+      - id: mixed-line-ending
+        args: [--fix=lf] # matches .gitattributes `* text=auto eol=lf`
+        exclude: ^tests/fixtures/
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: detect-private-key
+
+  # Secrets. The kit ships hooks/block-secrets.sh to stop an *agent* writing a secret; this is the
+  # same guarantee for a human's staged diff, and the one check `just lint` does not perform.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck (same invocation as `just lint`)
+        entry: shellcheck
+        language: system
+        types: [shell]
+        exclude: ^tests/fixtures/
+
+      - id: shfmt
+        name: shfmt -d -i 2 (same invocation as `just lint`)
+        entry: shfmt -d -i 2
+        language: system
+        types: [shell]
+        exclude: ^tests/fixtures/
+
+      - id: markdownlint-cli2
+        name: markdownlint-cli2 (pinned; same invocation as `just lint`)
+        # No filenames: markdownlint-cli2 reads its globs and ignores from
+        # .markdownlint-cli2.jsonc, so this runs byte-identically to the justfile recipe.
+        entry: pnpm dlx markdownlint-cli2@0.23.2
+        language: system
+        files: \.md$
+        pass_filenames: false

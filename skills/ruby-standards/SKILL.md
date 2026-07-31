@@ -3,7 +3,7 @@ name: ruby-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any Ruby code (.rb files, Gemfile, .gemspec) in a touchstone repo — version-manager + .ruby-version pin, Bundler with committed Gemfile.lock, RuboCop (+performance/+rspec), RBS/Steep or Sorbet, RSpec, YJIT. Invoke before adding gems, editing specs, touching types, or changing error handling. Rails-specific concerns (controllers, ActiveRecord, migrations) → rails-standards skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

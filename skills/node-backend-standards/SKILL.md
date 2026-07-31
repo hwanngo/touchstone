@@ -3,7 +3,7 @@ name: node-backend-standards
 description: Use when building or reviewing a Node.js backend service in TypeScript in a touchstone repo — Fastify/NestJS/Express APIs, layering, config, validation, errors, graceful shutdown, streams, security, testing. Triggers on `fastify`/`@nestjs/*`/`express` in package.json and server-side `.ts` (server.ts, app.ts, route/service/repository files). For React/Next/Nuxt UIs use those skills; TS-language rules live in the typescript skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

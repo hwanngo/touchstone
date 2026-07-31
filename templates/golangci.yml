@@ -29,6 +29,8 @@ linters:
   exclusions:
     generated: lax
     presets: [comments, common-false-positives, std-error-handling]
+    # the vendored kit is a pinned submodule gated by its own CI — never this repo's problem
+    paths: ["^\\.touchstone/"]
     rules:
       - path: _test\.go
         linters: [gosec, unparam, bodyclose]
@@ -37,3 +39,5 @@ formatters:
   settings:
     goimports:
       local-prefixes: [github.com/yourorg/yourrepo] # <- set this
+  exclusions:
+    paths: ["^\\.touchstone/"]

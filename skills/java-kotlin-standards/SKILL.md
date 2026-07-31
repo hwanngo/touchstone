@@ -3,7 +3,7 @@ name: java-kotlin-standards
 description: Use when writing, reviewing, testing, formatting, or building any Java or Kotlin code in a touchstone repo — triggers on .java/.kt files, build.gradle(.kts)/settings.gradle.kts, gradle/libs.versions.toml, or pom.xml. Covers JDK/Gradle toolchain, Spotless, null-safety, records/sealed types, coroutines/virtual threads, JUnit/Testcontainers, and reproducible builds. Not for Android UI, JVM service frameworks, or cross-cutting supply-chain (see security/dependencies siblings).
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -22,7 +22,7 @@ load-bearing rules so it stays useful even when installed standalone in `~/.clau
 - **Model data with `record`/`data class` and closed hierarchies with `sealed`** — exhaustive `switch`/`when` with **no `default`** so a new variant is a compile error.
 - **Structured concurrency:** Kotlin coroutines in a `coroutineScope` (never `GlobalScope`); Java virtual threads + `StructuredTaskScope` (don't pool virtual threads, don't pin under `synchronized`). **Every blocking call is timeout-bounded.**
 - **Lock the graph:** version catalog is the only version source; Gradle dependency **locking** + **verification** (checksums + signatures) on; commit the lockfile; CI builds `--offline`. `dependencyCheckAnalyze` clean.
-- **Reproducible jars** (stable timestamps/order); ship via **jlink**, GraalVM `native-image` only where cold start is measured _(scale-up)_. Supply-chain details: `standards/practices/security.md` and `dependencies.md`.
+- **Reproducible jars** (stable timestamps/order); ship via **jlink**, GraalVM `native-image` only where cold start is measured _(scale-up)_. Supply-chain details: `standards/practices/security.md` and `standards/practices/dependencies.md`.
 
 ## Done
 `spotlessCheck` clean · Error Prone/NullAway + Detekt pass · warnings-as-errors · `./gradlew test` green (Testcontainers for integration) · dependency locking + verification on, lockfile committed · `dependencyCheckAnalyze` clean · reproducible jars with SBOM + signed provenance. See `standards/languages/java-kotlin.md`.

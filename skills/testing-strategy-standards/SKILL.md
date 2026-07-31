@@ -3,7 +3,7 @@ name: testing-strategy-standards
 description: Use for cross-cutting testing decisions in a touchstone repo — test pyramid/layering, what to mock, contract testing between services, test data, flaky-test handling, or coverage policy. Invoke when designing a test suite or dealing with a flaky/slow test (per-language test mechanics live in the language skills).
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

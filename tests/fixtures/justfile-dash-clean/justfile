@@ -1,0 +1,27 @@
+# Fixture: no recipe line carries just's `-` prefix, but four constructs put a leading `-` on a
+# line anyway. Each is a place an earlier version of the scanner produced a false positive.
+#   1. `set ... := [... "-uc"]`  a setting, not a recipe header (matched `:` before the `:=` test)
+#   2. `-two` after a `\`        a continuation argument; just joins it before parsing prefixes
+#   3. `-r` inside a shebang     just hands the whole body to the interpreter, prefixes and all
+#   4. `# -bash ...`             a comment inside a recipe body
+
+set shell := ["bash", "-uc"]
+
+default:
+    @just --list
+
+gates:
+    if [ -f scripts/check-a.sh ]; then bash scripts/check-a.sh; fi
+    # -bash scripts/check-b.sh   <- shown as prose, must not be read as a recipe line
+    bash scripts/check-c.sh
+
+wrapped:
+    echo one \
+        -two
+
+scripted:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cat <<'EOF'
+    -r
+    EOF

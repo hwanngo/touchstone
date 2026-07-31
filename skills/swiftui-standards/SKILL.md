@@ -1,9 +1,9 @@
 ---
 name: swiftui-standards
-description: Use when building or reviewing SwiftUI UI in a touchstone repo — declarative views, the Observation framework for state, navigation, in-view concurrency, identity/perf, and the a11y/test surface. Triggers on SwiftUI views, `.swift` files declaring `: View`/`some View`, `@Observable`, `@State`/`@Bindable`, `NavigationStack`, `#Preview`. Boundary: Swift-language rules (concurrency, optionals, value types, packages) → swift skill; this layers on top.
+description: "Use when building or reviewing SwiftUI UI in a touchstone repo — declarative views, the Observation framework for state, navigation, in-view concurrency, identity/perf, and the a11y/test surface. Triggers on SwiftUI views, `.swift` files declaring `: View`/`some View`, `@Observable`, `@State`/`@Bindable`, `NavigationStack`, `#Preview`. Boundary: Swift-language rules (concurrency, optionals, value types, packages) → swift skill; this layers on top."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

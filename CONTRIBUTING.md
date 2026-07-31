@@ -26,9 +26,17 @@ engineer defend this in a design review?"
 ## Layout
 
 - `standards/` — the canonical docs (one per stack/area).
-- `skills/` — thin Claude Code wrappers pointing at the canonical docs.
-- `templates/` — ready-to-copy config files referenced by the standards.
+- `skills/` — thin Claude Code wrappers pointing at the canonical docs, plus the generated
+  `CATALOG.md` index.
+- `templates/` — ready-to-copy config files referenced by the standards, including the
+  `templates/github/` set (workflows, CODEOWNERS, PR/issue templates) an adopting repo receives.
+- `hooks/` — the opt-in Claude Code agent hooks, installed by `init.sh --with-hooks`.
 - `scripts/` — kit tooling (`bootstrap.sh`/`init.sh` to adopt, the `check-*` gates, `gen-skill-catalog.sh`, `bump-version.sh`).
+- `tests/` — the bash suite `tests/run.sh` runs: `gates/` and `hooks/` cases, the `lib/assert.sh`
+  primitives, `tools/`, and the `fixtures/` trees the gates are exercised against.
+- `.github/` — the kit's **own** CI workflow and Dependabot config; what adopters get is
+  `templates/github/`, not this.
+- `.claude-plugin/` — `plugin.json`, the manifest that lets Claude Code install the kit as a plugin.
 - `AGENTS.md` — the tool-agnostic entry point for AI agents.
 
 ## Authoring conventions
@@ -94,4 +102,3 @@ What the kit *does* pin — Action SHAs and the `shfmt` version in CI — is rep
 currency; **Dependabot** (`.github/dependabot.yml`) bumps those. A light **quarterly sweep**
 re-verifies the floors/named-features still asserted and runs `scripts/check-*` — that's the whole
 maintenance loop.
-

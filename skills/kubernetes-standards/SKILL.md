@@ -1,9 +1,9 @@
 ---
 name: kubernetes-standards
-description: Use when authoring or editing Kubernetes manifests, Helm charts, kustomization.yaml, or any *.yaml with a `kind:` (Deployment/StatefulSet/Job/Service/Ingress/NetworkPolicy) in a touchstone repo — covers workloads, resources, probes, securityContext, networking, scaling, rollouts, and policy/lint. Triggers on k8s manifests, Helm/Kustomize, HPA/PDB, and admission policy. Boundary: image build is docker-standards, IaC/GitOps/SRE is devops-standards, telemetry is observability-standards, supply-chain/signing is security-standards.
+description: "Use when authoring or editing Kubernetes manifests, Helm charts, kustomization.yaml, or any *.yaml with a `kind:` (Deployment/StatefulSet/Job/Service/Ingress/NetworkPolicy) in a touchstone repo — covers workloads, resources, probes, securityContext, networking, scaling, rollouts, and policy/lint. Triggers on k8s manifests, Helm/Kustomize, HPA/PDB, and admission policy. Boundary: image build is docker-standards, IaC/GitOps/SRE is devops-standards, telemetry is observability-standards, supply-chain/signing is security-standards."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

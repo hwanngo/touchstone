@@ -3,7 +3,7 @@ name: observability-standards
 description: Use when adding instrumentation, OpenTelemetry/OTLP/Collector config, metrics or structured logging, distributed tracing, dashboards, alert rules, or SLOs/error budgets in a touchstone repo — covers the three signals, cardinality discipline, and burn-rate alerting. Invoke before wiring telemetry or paging. NOT the deploy-time infra (Prometheus/Grafana operators, k8s) — that's devops-standards.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

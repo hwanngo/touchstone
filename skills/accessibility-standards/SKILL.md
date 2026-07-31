@@ -3,14 +3,14 @@ name: accessibility-standards
 description: Use when building or reviewing web UI, components, forms, or markup in a touchstone repo — semantic HTML, ARIA, keyboard/focus, contrast, alt text, motion, and the a11y CI gate. Triggers on JSX/HTML/template edits, new interactive widgets, forms, and a11y review. Targets WCAG 2.2 AA. Framework wiring lives in the react/next skills; this is the cross-cutting source of truth they defer to.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Accessibility (practice)
 
 Full standard: **`standards/practices/accessibility.md`** (framework wiring layers on
-`standards/frameworks/react.md` and `next.md`). Load-bearing rules inlined so this stays useful
+`standards/frameworks/react.md` and `standards/frameworks/next.md`). Load-bearing rules inlined so this stays useful
 standalone in `~/.claude/skills/`:
 
 ## Always

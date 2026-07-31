@@ -7,6 +7,10 @@ Applies to React single-page apps (Vite by default), tested with **React Testing
 shipped as an installable **PWA** where it fits. Need SSR/SEO instead? → §3 and
 [next.md](next.md).
 
+**Baseline: React 19** (19.2 current stable). Every rule below assumes it. React 19 deleted a
+long tail of APIs that had replacements for years and added first-class ones for things this doc
+previously worked around; the version floor, the removals, and the adoption order are §14.
+
 ---
 
 ## 1. Project structure (feature-based)
@@ -40,6 +44,12 @@ src/
 - **One component returns one tree.** Don't define nested render-functions (`renderHeader()`)
   inside a component — extract a real component. A ballooning prop list is the signal to split
   or switch to composition (`children`/slots), not to add a tenth prop.
+- **`ref` is an ordinary prop — no `forwardRef` wrapper.** Destructure it like any other prop
+  (`function Input({ ref, ...rest })`). A ref *callback* may now return a **cleanup function**, so
+  teardown lives next to setup instead of in a paired effect — but that also means an implicit
+  arrow return is a type error: `ref={el => (map[id] = el)}` must become a block body.
+- **`<Context>` is its own provider**: `<ThemeContext value={theme}>`, not
+  `<ThemeContext.Provider value={theme}>`. Same object, one less indirection.
 - **Wrap third-party UI/libs** behind a thin local component so a swap is a one-file change.
 - **Validate every external/API boundary with a schema (Zod).** Parse responses into typed
   data at the edge so the rest of the app works with trusted types; surface clear errors on
@@ -114,6 +124,11 @@ state crammed into a client store. Five kinds, five homes:
   race conditions, double-fires under StrictMode, and reimplements caching/cancellation per call.
   Pair queries with `<Suspense>` + an error boundary so loading/error are structural, not
   per-component `if (isLoading)` ladders.
+- **`use()` is the one "hook" you may call conditionally.** It reads a promise (suspending until
+  it settles) or a context, and unlike `useContext` it works after an early return or inside a
+  branch. Use it to unwrap a promise handed down from a parent — **never for a promise created
+  during render**, which mints a new one every pass and never settles. It complements TanStack
+  Query, it doesn't replace it: `use()` has no cache, no dedup, no refetch.
 - **Validate runtime env at boot.** Parse `import.meta.env` through a Zod schema in a side-
   effect-imported `env.ts` so misconfig fails loudly, not mid-session. **The `VITE_` prefix is
   a boundary, not a safeguard** — prefixed vars are inlined as plaintext into the bundle; never
@@ -144,6 +159,13 @@ memoisation adds dependency-array bugs for no win.
   The compiler *requires* Rules-of-Hooks compliance to be safe.
 - **Don't suppress `useExhaustiveDependencies`** (Biome's `react` domain). A silenced
   dependency array is a stale-closure bug waiting to happen — and the Compiler trusts it.
+  When you genuinely need an Effect to read a value without re-firing on it, that's what
+  **`useEffectEvent`** (React 19.2) is for: move the non-reactive part into an Effect Event and
+  call it from the Effect. It reads the latest value at call time and is *not* a dependency — a
+  supported escape hatch instead of a suppression comment.
+- **`<Activity>`** (React 19.2) hides a subtree with `display: none` while **keeping its state**
+  and unmounting its Effects, and de-prioritises its updates. Reach for it on tabs, wizard steps,
+  and back-navigation targets where unmounting loses work but leaving it live costs renders.
 
 ## 8. Forms
 
@@ -157,6 +179,24 @@ memoisation adds dependency-array bugs for no win.
 const form = useForm<CreateUser>({ resolver: zodResolver(createUserSchema) })
 // register fields uncontrolled; form.handleSubmit(onValid) parses+validates once
 ```
+
+**React 19 Actions are the second legitimate shape** — pass an async function straight to
+`<form action={fn}>` and React manages the submission for you: **`useActionState`** returns
+`[state, action, isPending]` (pending, error, and result without a `useState` triplet),
+**`useFormStatus`** lets a nested submit button read the parent form's pending state without prop
+drilling, and **`useOptimistic`** shows the pending result and reverts automatically on failure.
+Choose by where the mutation runs and how much client logic the form carries:
+
+| Form | Use |
+|---|---|
+| Submits to a Server Function; wants progressive enhancement | **Action** on `<form>` + `useActionState` |
+| Multi-step, dependent fields, per-keystroke validation | **React Hook Form** (above) |
+| Both | RHF submitting *into* the action — they compose |
+
+**What doesn't change either way: the server re-validates.** A Server Function is a public HTTP
+endpoint ([next.md](next.md) §3); client-side parsing is UX, and the same Zod schema has to run
+again on the other side. Stop writing bespoke `isSubmitting`/`error` state — one of the three
+hooks above already owns it.
 
 See [api-design.md](../design/api-design.md) for sharing the schema across the boundary.
 
@@ -176,6 +216,9 @@ See [api-design.md](../design/api-design.md) for sharing the schema across the b
 type Props = { variant: 'primary' | 'secondary' | 'danger' } & ComponentPropsWithRef<'button'>
 function Button({ variant, ...rest }: Props) { return <button data-variant={variant} {...rest} /> }
 ```
+
+`ComponentPropsWithRef` already carries `ref`, and in React 19 that is just a prop the spread
+forwards — so this composes with focus management with no `forwardRef` in sight (§2).
 
 ## 10. Accessibility (first-class, not a pass at the end)
 
@@ -254,7 +297,9 @@ Mechanics (runner, coverage thresholds) live in
 
 - **React Testing Library**, jsdom environment, global setup file. Test **behaviour and
   accessibility** (roles, labels, user events) — not implementation details. Use
-  `@testing-library/user-event` for interactions.
+  `@testing-library/user-event` for interactions. React 19 makes this the only supported path:
+  `react-dom/test-utils` is **removed** (`act` now comes from `react` itself) and
+  `react-test-renderer` is deprecated (§14).
 - Co-locate tests (e.g. `src/**/__tests__/*.test.tsx`).
 - **Mock the network, not `fetch`** — use **MSW** request handlers (shareable with dev/Storybook)
   and assert against the same Zod schemas the app uses. Hand-mocking `fetch` is brittle and
@@ -262,10 +307,51 @@ Mechanics (runner, coverage thresholds) live in
   (real provider tree + `QueryClient` + MSW) over shallow unit tests of presentational
   components. See [testing-strategy.md](../practices/testing-strategy.md).
 
+## 14. React 19 baseline
+
+**Target React 19** (19.2 current stable; `react` and `react-dom` are versioned together). This is
+a genuine breaking change, not a bump — most of it is the deletion of APIs that have had
+replacements for years, so the migration is mechanical but not optional.
+
+**Removed** — these fail, they don't warn:
+
+| Gone | Use instead |
+|---|---|
+| `propTypes`, `defaultProps` on function components | TypeScript prop types; ES default parameters |
+| Legacy context (`contextTypes` / `getChildContext`) | `createContext` (§2) |
+| String refs (`ref="input"`) | ref callbacks / `useRef` |
+| `ReactDOM.render`, `hydrate`, `unmountComponentAtNode`, `findDOMNode` | `createRoot`, `hydrateRoot`, `root.unmount()`, a ref |
+| `react-dom/test-utils` | `act` from `react`; RTL for the rest (§13) |
+| `React.createFactory`, UMD builds | JSX; an ESM CDN |
+
+**Deprecated**: `element.ref` (read `element.props.ref`) and `react-test-renderer`. `forwardRef`
+and `Context.Provider` still work but no longer have a job (§2) — React has said it intends to
+deprecate both, so don't write new ones.
+
+**Worth adopting, in rough order of payoff:**
+
+| Feature | Replaces |
+|---|---|
+| Actions + `useActionState` / `useFormStatus` / `useOptimistic` (§8) | hand-rolled pending/error/optimistic state around a submit |
+| `ref` as a prop; ref cleanup functions (§2) | `forwardRef`; teardown stranded in a paired effect |
+| `use()` (§6) | `useContext` stuck above an early return; promise-unwrapping boilerplate |
+| `useEffectEvent`, `<Activity>` (19.2, §7) | a suppressed dependency array; unmounting and losing state |
+| Metadata in components — `<title>`/`<meta>`/`<link>` hoisted to `<head>` | react-helmet and friends |
+| `preload` / `preinit` / `preconnect` / `prefetchDNS` from `react-dom` | hand-injected `<link rel="preload">` tags |
+| `onCaughtError` / `onUncaughtError` on `createRoot` | ad-hoc error plumbing around the boundary (§6) |
+
+**Not stable — do not standardise on it.** `<ViewTransition>` is **canary/experimental only**. A
+meta-framework that pins React canary (the Next.js App Router does) exposes it; a Vite SPA on
+stable React does not. Treat it as an experiment, not a pattern.
+
+The **React Compiler** ships on its own 1.0 track and is *not* part of React 19 — see §7.
+
 ## Definition of done
 
 - [ ] Language DoD met ([typescript.md](../languages/typescript.md) §10): `biome ci`, `tsc`,
       tests, supply chain
+- [ ] On React 19; nothing left from the removed list (§14) — no `propTypes`/`defaultProps`,
+      string refs, `ReactDOM.render`, or `react-dom/test-utils`
 - [ ] Feature-based structure held: no cross-feature imports, unidirectional rule passes, no
       barrel files (§1)
 - [ ] Server state lives in TanStack Query, not copied into `useState`/global stores (§4)
@@ -282,4 +368,7 @@ structure, state management, API layer, components) ·
 [TanStack Query docs](https://tanstack.com/query/latest/docs/framework/react/overview) &
 [TkDodo's Practical React Query](https://tkdodo.eu/blog/practical-react-query) ·
 [React TypeScript Cheatsheet](https://github.com/typescript-cheatsheets/react) ·
-[react.dev — You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+[react.dev — You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) ·
+[React 19 release notes](https://react.dev/blog/2024/12/05/react-19) &
+[React 19 upgrade guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide) ·
+[React 19.2 release notes](https://react.dev/blog/2025/10/01/react-19-2)

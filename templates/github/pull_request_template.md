@@ -15,6 +15,7 @@ Closes #
 - [ ] Conventional Commit title (`feat:` / `fix:` / `refactor:` / `docs:` / `chore:`)
 - [ ] Lint + format + type-check pass locally
 - [ ] Tests added/updated and green (with the race detector for Go)
-- [ ] No secrets, generated artifacts, or AI planning docs committed
+- [ ] No secrets or AI planning docs committed; any committed generated file has a CI
+      regenerate-and-diff freshness gate
 - [ ] Docs/README updated if behaviour or interfaces changed
 - [ ] Dependency changes reviewed (lockfile committed; advisories triaged)

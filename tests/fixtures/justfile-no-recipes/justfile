@@ -1,0 +1,9 @@
+# Fixture: a justfile with settings and comments but not one recipe body line. Scanning it proves
+# nothing about `-` prefixes, so the scanner must report it as vacuous rather than clean — the
+# empty-tree case that tests/gates/check-links.test.sh had to add for the same reason.
+
+set shell := ["bash", "-uc"]
+
+export EXAMPLE := "value"
+
+# ci: lint test   <- commented out, so there is no recipe here either

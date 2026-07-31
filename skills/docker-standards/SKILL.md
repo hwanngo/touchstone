@@ -3,7 +3,7 @@ name: docker-standards
 description: Use when writing or editing Dockerfiles, docker-compose, reverse-proxy config, base images, or container build/runtime setup in a repo that follows touchstone. Invoke before changing how images are built, run, or wired together.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

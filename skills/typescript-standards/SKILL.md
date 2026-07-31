@@ -3,7 +3,7 @@ name: typescript-standards
 description: Use when writing or configuring TypeScript at the LANGUAGE level (any framework) — tsconfig, pnpm, Biome, module/import hygiene, Vitest config, type patterns — in a touchstone repo. Triggers on .ts/.tsx, tsconfig.json, package.json. For framework rules use the framework skill (react/next/nuxt).
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

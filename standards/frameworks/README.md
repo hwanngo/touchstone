@@ -42,7 +42,7 @@ rather than repeating them.
 - **Not used anywhere** → no file. No speculative `qwik.md` / `remix.md` / `quarkus.md`.
 - **Build tools** (Vite, etc.) fold into their consuming framework's doc — no standalone file.
 - **Meta-frameworks** (Next, Nuxt, Remix) get their own doc when adopted, and defer component-level
-  rules to the base framework (`next.md` → `react.md`; `nuxt.md` carries Vue inline until a repo
-  needs a standalone `vue.md`).
+  rules to the base framework (`next.md` → `react.md`; `nuxt.md` → `vue.md`), keeping only a
+  condensed recap of the base rules inline.
 
 Naming: flat, framework-named, language implicit — `react.md`, `next.md` (never `typescript-react.md`).

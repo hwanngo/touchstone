@@ -1,6 +1,8 @@
 # Nuxt (Vue 3) Standards
 
-Meta-framework over Vue 3 — language rules → [typescript.md](../languages/typescript.md). (No standalone vue.md yet; extract one if a non-Nuxt Vue app appears.) Dependencies and supply-chain defer to [typescript.md](../languages/typescript.md) + [security.md](../practices/security.md).
+Meta-framework over Vue 3 — component-level Vue rules → [vue.md](vue.md) (§1 below is a condensed
+recap, not a replacement); language rules → [typescript.md](../languages/typescript.md). Dependencies
+and supply-chain defer to [typescript.md](../languages/typescript.md) + [security.md](../practices/security.md).
 
 ---
 

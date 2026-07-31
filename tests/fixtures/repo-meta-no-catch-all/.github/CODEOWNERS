@@ -1,0 +1,2 @@
+# fixture CODEOWNERS with only a path rule and no catch-all
+/scripts/  @fixture-owner

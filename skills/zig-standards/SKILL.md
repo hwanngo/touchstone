@@ -3,7 +3,7 @@ name: zig-standards
 description: Use when writing, reviewing, testing, formatting, or configuring any Zig code (.zig files, build.zig, build.zig.zon) in a touchstone repo — exact-version-pinned compiler (Zig is pre-1.0 and moving), zig fmt, zig build/test, comptime generics, explicit allocators, error unions, cross-compilation. Invoke before adding deps, touching memory/allocators, choosing a release mode, or wiring C interop. Not for cross-cutting supply-chain (security-standards) or pipeline (ci-cd-standards) concerns.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

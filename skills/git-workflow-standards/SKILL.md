@@ -3,14 +3,14 @@ name: git-workflow-standards
 description: Use when choosing a branching model, setting up releases/versioning, deciding monorepo vs polyrepo, or configuring branch protection/merge queues in a touchstone repo — covers trunk-based development, SemVer + release-please, repo topology, and Git LFS. Commit/PR hygiene and review mechanics live in the collaboration and code-review skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # Git Workflow & Release Management Standards
 
 Full standard: **`standards/practices/git-workflow.md`** in the touchstone repo (defers commit
-conventions to `collaboration.md`, CI/branch-protection wiring to `platform/ci-cd.md`). This skill
+conventions to `standards/practices/collaboration.md`, CI/branch-protection wiring to `standards/platform/ci-cd.md`). This skill
 inlines the load-bearing rules so it stays useful when installed standalone in `~/.claude/skills/`:
 
 ## Always

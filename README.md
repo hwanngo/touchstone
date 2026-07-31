@@ -34,9 +34,9 @@ from a known-good baseline instead of drift.
 |---|---|
 | [`standards/`](standards/README.md) | The standards themselves — one doc per stack/area |
 | [`skills/`](skills/README.md) | AI-agent skill wrappers ([Agent Skills](https://agentskills.io) spec) that surface the right standard at the right time |
-| [`templates/`](templates/) | Ready-to-copy config files (`biome.json`, `.golangci.yml`, `.pre-commit-config.yaml`, `ruff`, `justfile`, …) |
+| [`templates/`](templates/) | Config files `init.sh` copies in, each under its conventional destination name — the template is stored undotted: `templates/golangci.yml` → `.golangci.yml`, `templates/pre-commit-config.yaml` → `.pre-commit-config.yaml`, `templates/nvmrc` → `.nvmrc`; `biome.json` and `justfile` keep their name. ruff is configured by merging `templates/pyproject-snippet.toml`, not by a file of its own |
 | [`hooks/`](hooks/README.md) | Opt-in Claude Code agent hooks that enforce the standards at runtime (`init.sh --with-hooks`) |
-| [`scripts/`](scripts/README.md) | `bootstrap.sh`/`init.sh` (adopt), `check-{skills,standards,links,sync,skill-quality}.sh` (gates), `gen-skill-catalog.sh`, `bump-version.sh` |
+| [`scripts/`](scripts/README.md) | `bootstrap.sh`/`init.sh` (adopt) and `check-sync.sh` (the drift gate an adopter runs), plus `check-{agents,links,skill-quality,skills,standards}.sh` — **the kit's own CI gates, not adopter gates** ([why](#which-scripts-you-run-and-which-you-dont)) — `gen-skill-catalog.sh`, `bump-version.sh` |
 | [`AGENTS.md`](AGENTS.md) | Tool-agnostic instructions any AI agent reads first |
 
 ### Standards index
@@ -83,21 +83,37 @@ Full index with one-line descriptions: **[standards/README.md](standards/README.
 
 ## Adopting it in a repo
 
+> [!IMPORTANT]
+> **touchstone has not published a release tag yet.** `bootstrap.sh` pins `.touchstone` to
+> `v<VERSION>` by default, and until a `v0.1.0` tag exists on the remote that ref cannot resolve —
+> so the bare `bootstrap.sh` form **fails**, deliberately and with a clean rollback, rather than
+> vendoring something unpinned behind your back. Pass `--ref` (below) until the first tag ships.
+> The failure message names the working options and prints them as runnable commands.
+
 **One command** — clone the kit once, then from inside any target repo run `bootstrap.sh`: it
 vendors the kit as a **pinned submodule** and runs `init.sh`, which detects your stack, generates
 the per-tool pointer files (Claude/Gemini/Cursor/Copilot/opencode), drops the matching templates +
 CI, and writes a `.touchstone.toml` marker. Nothing to copy by hand:
 
 ```bash
-git clone https://github.com/hwanngo/touchstone ~/touchstone     # once, anywhere
-cd my-repo && ~/touchstone/scripts/bootstrap.sh             # per repo (--with-hooks / --force / --dry-run pass through)
+git clone https://github.com/hwanngo/touchstone ~/touchstone       # once, anywhere
+cd my-repo
+~/touchstone/scripts/bootstrap.sh --ref "$(git -C ~/touchstone rev-parse HEAD)"
+#                                 ^ pins to the exact commit you just cloned — reproducible today.
+#                                   Drop --ref once a vX.Y.Z tag exists; --with-hooks / --force /
+#                                   --dry-run pass through to init.sh.
 ```
+
+`--ref` takes any tag, branch or commit SHA. `--allow-unpinned` vendors the default branch instead,
+without a pin — convenient, but it gives up the reproducibility the submodule model exists for, so
+prefer a SHA.
 
 Or do it explicitly (same result):
 
 ```bash
 git submodule add https://github.com/hwanngo/touchstone .touchstone
-./.touchstone/scripts/init.sh           # --dry-run to preview; --force to overwrite
+git -C .touchstone checkout <sha-or-tag>   # pin it; a floating submodule is not a pin
+./.touchstone/scripts/init.sh              # --dry-run to preview; --force to overwrite
 ```
 
 Then finish the setup:
@@ -113,6 +129,23 @@ Then score the repo against the [self-audit checklist](standards/self-audit.md) 
 kit evolves with `./.touchstone/scripts/check-sync.sh` (wire it into CI); read
 [`CHANGELOG.md`](CHANGELOG.md) when bumping the pinned version.
 
+### Which scripts you run, and which you don't
+
+`.touchstone/scripts/` holds two different kinds of script, and running the wrong kind gives you a
+confident green about a repo that was never scanned:
+
+| From your repo | What it does |
+|---|---|
+| `./.touchstone/scripts/init.sh` | applies the kit to your repo (idempotent; re-run after bumping the pin) |
+| `./.touchstone/scripts/check-sync.sh` | **the adopter-facing gate** — is your copy still in sync with the pinned kit? Wire this into CI |
+| `just ci` | your repo's own gates, installed by `init.sh` |
+
+`check-agents.sh`, `check-links.sh`, `check-skill-quality.sh`, `check-skills.sh` and
+`check-standards.sh` are **touchstone's own CI gates**. They audit the kit's skills, standards and
+docs, and by design they always scan the repository they live in. Run from your repo they would
+therefore report on the *kit's* files and never open yours — so they now **refuse** with exit 2
+instead of printing a pass. They are not gates you are missing; your equivalents are `just ci`.
+
 For Claude Code users: copy [`skills/`](skills/) into `~/.claude/skills/` (global) or the repo's
 `.claude/skills/` so the standards surface automatically while you work.
 
@@ -127,7 +160,8 @@ gets gated the same way.
 | `standards/*.md` (plain docs) | **any** tool or human |
 | [`AGENTS.md`](AGENTS.md) — the entry point | Codex, opencode, Droid, Cursor, Jules, Pi, … |
 | `skills/*/SKILL.md` ([Agent Skills](https://agentskills.io) open spec) | Claude, Codex, Cursor, Gemini, Windsurf, Antigravity, Pi (others ignore them) |
-| `hooks/` agent hooks (installed via `init.sh --with-hooks`) + `.claude-plugin/` manifest | Claude Code only (CI/pre-commit is the tool-agnostic backstop) |
+| `hooks/` agent hooks (installed into your repo by `init.sh --with-hooks`) | Claude Code only (CI/pre-commit is the tool-agnostic backstop) |
+| `.claude-plugin/plugin.json` — how **this kit** is installed as a Claude Code plugin; it is *not* copied into your repo, and must not be (it names touchstone, its version and its homepage — in your repo it would declare your repo to be the touchstone plugin) | Claude Code only |
 
 So every tool finds the rules, **`scripts/init.sh` generates** thin **single-source pointer files**
 into your repo (nothing to copy by hand) — each defers to `AGENTS.md`, so no rules are duplicated:
@@ -145,7 +179,9 @@ reviewed rule files are committed in your repo (see
 - **Latest stable deps**, kept current; outdated packages are a security liability.
 - **Containers**: small current base images (slim/alpine/distroless), multi-stage, non-root, digest-pinned.
 - **CI is hardened**: Actions pinned to SHA, least-privilege `permissions:`, secrets scanned, OIDC over static keys.
-- **Never commit** secrets, generated artifacts, per-developer AI-assistant scratch, or AI-generated planning docs (shared, reviewed rule files like `AGENTS.md` are fine).
+- **Never commit** secrets, per-developer AI-assistant scratch, or AI planning docs. Generated
+  artifacts only when deterministic, marked generated, and CI-gated by regenerate-and-diff
+  (e.g. `skills/CATALOG.md`); shared, reviewed rule files like `AGENTS.md` are fine.
 
 ## License
 

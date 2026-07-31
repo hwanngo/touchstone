@@ -3,7 +3,7 @@ name: shell-standards
 description: Use when writing or editing a shell/bash script in a touchstone repo — CI steps, justfile recipes, entrypoints, agent hooks, or one-off automation (.sh files, a `#!/usr/bin/env bash` shebang). Covers the safety preamble, shellcheck + shfmt, quoting, robustness, and when to stop and rewrite in Python/Go. Not for application code — see the per-language skills.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

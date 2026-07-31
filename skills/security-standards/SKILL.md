@@ -3,7 +3,7 @@ name: security-standards
 description: Use when handling secrets, dependencies, CI/supply-chain, SBOM/signing, or web-app security in a repo that follows touchstone. Invoke before adding a dependency, wiring CI, handling credentials, or shipping a build artifact.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -24,7 +24,7 @@ load-bearing rules so it stays useful even when installed standalone in `~/.clau
 
 ## CI & build integrity
 - SAST: **CodeQL** (app) + **zizmor** (the workflows themselves). Attestations are unsigned by default; target SLSA Build L2/L3.
-- **Vuln-management SLA** (Critical/KEV 48h · High 7d · Med 30d), prioritized by CVSS+EPSS+KEV; DAST (ZAP) against staging. AuthN/authZ/OWASP/threat-modeling live in `app-security.md`.
+- **Vuln-management SLA** (Critical/KEV 48h · High 7d · Med 30d), prioritized by CVSS+EPSS+KEV; DAST (ZAP) against staging. AuthN/authZ/OWASP/threat-modeling live in `standards/practices/app-security.md`.
 
 ## Web
 - **CSP + security headers**; ban `dangerouslySetInnerHTML`; no secrets behind `VITE_`; no source maps in prod.

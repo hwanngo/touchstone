@@ -3,7 +3,7 @@ name: example-standards
 description: Use when <triggering situation> in a touchstone repo — <what it covers>. Triggers on <file globs / deps / signals>. <Boundary: what this is NOT; point to sibling skills>.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

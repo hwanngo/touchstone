@@ -1,0 +1,8 @@
+# Same repo and rev, ids that do exist there.
+repos:
+  - repo: https://example.invalid/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

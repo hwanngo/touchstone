@@ -3,7 +3,7 @@ name: axum-standards
 description: Use when building an Axum (or Actix-web) async Rust web service in a touchstone repo — routing, extractors, Tower middleware, IntoResponse errors, state/DI, graceful shutdown. Triggers on `axum`/`actix-web` in Cargo.toml, `Router`/`async fn` HTTP handlers, `State`/`Json`/`Path` extractors. Rust-language rules (toolchain, clippy, thiserror, tokio depth) live in the rust skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 

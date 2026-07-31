@@ -3,13 +3,13 @@ name: solid-standards
 description: Use when building a SolidJS app in a touchstone repo — signals/stores, props, control flow, resources, context, SolidStart SSR/routing/server functions. Triggers on `solid-js`/`@solidjs/start` in package.json, .tsx using Solid (createSignal/createStore), app.config.ts, src/routes. Language-level TS rules live in the typescript skill; for React (VDOM, hooks, re-render) use the react skill.
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
 # SolidJS (framework)
 
-Full standard: **`standards/frameworks/solid.md`** (layers on `languages/typescript.md`).
+Full standard: **`standards/frameworks/solid.md`** (layers on `standards/languages/typescript.md`).
 Load-bearing rules:
 
 ## Always

@@ -1,9 +1,9 @@
 ---
 name: code-quality-standards
-description: Use when writing, refactoring, or reviewing any code in a touchstone repo regardless of language — naming, function/file size, single responsibility, simplicity (KISS/YAGNI/DRY), guard clauses, error-handling philosophy, comments, and anti-sprawl. Boundary: per-language formatting/linting lives in the language skills (python/go/shell/…); PR/review process in code-review; test doubles in testing-strategy.
+description: "Use when writing, refactoring, or reviewing any code in a touchstone repo regardless of language — naming, function/file size, single responsibility, simplicity (KISS/YAGNI/DRY), guard clauses, error-handling philosophy, comments, and anti-sprawl. Boundary: per-language formatting/linting lives in the language skills (python/go/shell/…); PR/review process in code-review; test doubles in testing-strategy."
 license: MIT
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: touchstone
 ---
 
@@ -28,10 +28,10 @@ load-bearing, language-agnostic rules so it stays useful when installed standalo
 
 ## Defer, don't restate
 - Per-language formatting / linting / line-length / error mechanics → the language skills
-  (`python.md`, `golang.md`, `shell.md`).
-- PR size, review priority, comment prefixes → `code-review.md`.
-- What to mock, fakes-over-mocks, test data → `testing-strategy.md`.
-- Docstring style, doc-as-code → `documentation.md`; file-sprawl-vs-git policy → `collaboration.md`.
+  (`standards/languages/python.md`, `standards/languages/golang.md`, `standards/languages/shell.md`).
+- PR size, review priority, comment prefixes → `standards/practices/code-review.md`.
+- What to mock, fakes-over-mocks, test data → `standards/practices/testing-strategy.md`.
+- Docstring style, doc-as-code → `standards/practices/documentation.md`; file-sprawl-vs-git policy → `standards/practices/collaboration.md`.
 
 ## Done
 Names reveal intent · units do one thing · simplest design (abstraction earned) · flat happy path ·

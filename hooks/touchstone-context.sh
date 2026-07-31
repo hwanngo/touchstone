@@ -17,7 +17,14 @@ fi
 [ -z "$rules" ] && [ -f "$cwd/skills/touchstone/SKILL.md" ] && rules="$(cat "$cwd/skills/touchstone/SKILL.md")"
 [ -z "$rules" ] && exit 0
 
-banner="This repo follows touchstone. Obey these hard rules from the first action; the full standards live in standards/.
+# Layout-aware: in the kit the standards are at the root; in an adopting repo the kit is vendored
+# (normally at .touchstone/) and there is no root standards/. This one file is byte-copied to
+# adopters and is checked by scripts/check-sync.sh, so it must serve both layouts with a runtime
+# branch rather than forking into a second, adopter-flavoured copy that would drift.
+sdir="standards/"
+[ ! -d "$cwd/standards" ] && [ -d "$cwd/.touchstone/standards" ] && sdir=".touchstone/standards/"
+
+banner="This repo follows touchstone. Obey these hard rules from the first action; the full standards live in $sdir.
 
 $rules"
 

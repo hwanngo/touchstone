@@ -1,0 +1,17 @@
+# Code review ownership for touchstone itself.
+# What adopters get is templates/github/CODEOWNERS, not this file.
+#
+# The kit's own advice (standards/practices/collaboration.md, standards/platform/ci-cd.md) is
+# "key to TEAMS, not individuals, with a catch-all fallback". The team half of that advice is for
+# multi-team product repos: touchstone is a single-maintainer standards repo with no GitHub org
+# behind it, so there is no team to key to, and inventing one would produce lines GitHub silently
+# ignores — the exact failure mode the template warns about. The catch-all is therefore keyed to
+# the maintainer, and it is the whole file: path rules resolving to the same single owner would
+# add review latency and no reviewer.
+#
+# Last match wins. Invalid lines are silently ignored, so verify this file renders owners in the
+# PR sidebar after editing it, and keep "Require review from Code Owners" enabled in the branch
+# ruleset protecting `main` — a CODEOWNERS file with no rule requiring its review is decoration.
+
+# Catch-all fallback — every path, including ones added later.
+*       @hwanngo
