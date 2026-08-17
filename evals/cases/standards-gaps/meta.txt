@@ -1,0 +1,4 @@
+agent: standards-auditor
+summary: an adopter repo with four catalogued gaps — no lockfile, an unpinned GitHub Action, a pip install line, and no SECURITY.md
+min_recall: 100
+max_unmatched: 3

@@ -73,6 +73,26 @@ write_decision() {
   _hook_decision_of "$out"
 }
 
+# multiedit_decision <hook-script> <file-path> <new_string-1> <new_string-2>
+#   -> "allow" | "deny" | "STDERR:<text>"
+#
+# One MultiEdit call carrying exactly two edits. This shape is not reachable through
+# write_decision, and it is the one the campaign used to reconstruct a PEM header on disk out of
+# two fragments that never share a line — so the suite needs to be able to build it.
+#
+# Two named --arg bindings rather than jq's variadic --args: a positional whose value begins with
+# `-` (which is exactly the fragment this helper exists to carry) is parsed by jq as an option.
+multiedit_decision() {
+  local script="$1" path="$2" a="$3" b="$4" payload out
+  payload="$(jq -Rn --arg p "$path" --arg a "$a" --arg b "$b" \
+    '{tool_name:"MultiEdit",
+      tool_input:{file_path:$p,
+        edits:[{old_string:"PLACEHOLDER_A",new_string:$a},
+               {old_string:"PLACEHOLDER_B",new_string:$b}]}}')"
+  out="$(_hook_run "$script" "$payload")"
+  _hook_decision_of "$out"
+}
+
 # notebook_decision <hook-script> <notebook-path> [new-source] -> "allow" | "deny" | "STDERR:<text>"
 notebook_decision() {
   local script="$1" path="$2" source="${3-}" payload out

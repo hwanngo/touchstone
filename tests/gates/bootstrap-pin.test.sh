@@ -41,6 +41,18 @@ if [ -z "$TMP" ] || [ ! -d "$TMP" ]; then
 fi
 trap 'rm -rf "$TMP"' EXIT
 
+# These rows vendor a local directory as a stand-in remote, and `git submodule add` refuses a
+# local-path transport since git 2.38.1 (the CVE-2022-39253 mitigation) unless protocol.file.allow
+# permits it. Scope that to an isolated config for this file only: never the real ~/.gitconfig, and
+# never bootstrap.sh itself, which keeps the stricter default for real adopters. Without this the rows
+# pass or fail according to whether the developer happens to have protocol.file.allow set globally.
+# The SSH-shaped case below builds its own $GITCFG and passes GIT_CONFIG_GLOBAL explicitly, which
+# overrides this for that one invocation — it sets protocol.file.allow itself.
+GIT_CONFIG_GLOBAL="$TMP/gitconfig-base"
+export GIT_CONFIG_GLOBAL
+: >"$GIT_CONFIG_GLOBAL"
+git config --file "$GIT_CONFIG_GLOBAL" protocol.file.allow always
+
 mkgitrepo() {
   # mkgitrepo <dir> — init a scratch repo with a local, throwaway identity (the test host may
   # have no global git user.name/user.email configured at all).

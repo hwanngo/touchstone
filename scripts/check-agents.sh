@@ -55,7 +55,7 @@ if [ "${TOUCHSTONE_ALLOW_NESTED:-0}" != "1" ]; then
       echo "  This gate always scans the repo it lives in: $_ts_root"
       echo "  That is a vendored touchstone checkout inside: $_ts_host"
       echo "  So a verdict from here describes the KIT's files and never opens yours. A green would mean nothing."
-      echo "  check-{agents,links,skill-quality,skills,standards}.sh are touchstone's OWN CI gates, not adopter gates."
+      echo "  check-{agents,evals,links,skill-quality,skills,standards}.sh are touchstone's OWN CI gates, not adopter gates."
       echo "  From a repo that adopted touchstone you want:"
       echo "    ./.touchstone/scripts/check-sync.sh   is my copy of the kit still in sync? (the adopter-facing gate)"
       echo "    just ci                               my own repo's gates"

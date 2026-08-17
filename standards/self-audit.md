@@ -6,7 +6,9 @@ marked _(scale-up)_ apply to production-scale infra only.
 
 ## Maturity levels
 
-Adopt in order — don't bounce off the full list. Declare your target in `.touchstone.toml` (`level`).
+Adopt in order — don't bounce off the full list. `.touchstone.toml`'s `level` is a **conformance
+claim**, not a target: it declares the highest level at which every applicable item below is
+already ✅ (see "conforms at `Ln`" below), and it is false the moment that stops being true.
 
 | Level | Name | What it requires | For |
 |---|---|---|---|
@@ -20,9 +22,13 @@ the checkbox, `**L1**` … `**L4**`, drawn from the Level column above, so `grep
 the floor out of the list. An item's later clauses can fall due above its marker: L2 is "all L1
 enforced in **CI**", so the CI clause of an **L1** item is due at L2, and an inline _(scale-up)_
 clause is due at L4. A repo "conforms at Ln" when every item marked up to and including Ln is ✅
-(waivers documented in `.touchstone.toml`). `tests/gates/self-audit-levels.test.sh` fails if any
-item carries no marker, or one this table does not declare — so a newly added item cannot join an
-untagged tail.
+(waivers documented in `.touchstone.toml`). A repo with an open ❌ in L1 conforms at **no** level —
+say that plainly rather than rounding up to L1 because it's close. `.touchstone.toml`'s `level`
+field records this as `0`: not one of the four levels this table declares, but the explicit legal
+value for "does not yet conform to L1", so the claim can be stated honestly instead of the field
+being left to imply a level that was never actually reached. `tests/gates/self-audit-levels.test.sh`
+fails if any item carries no marker, or one this table does not declare — so a newly added item
+cannot join an untagged tail.
 
 ---
 

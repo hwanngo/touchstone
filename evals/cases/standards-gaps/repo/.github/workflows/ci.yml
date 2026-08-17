@@ -1,0 +1,46 @@
+# Adapted from touchstone's CI starter (templates/github/workflows/ci.yml) — see
+# .touchstone/standards/platform/ci-cd.md.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read # least-privilege floor; elevate per-job only where needed
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@v2
+        with: { egress-policy: audit }
+      - uses: actions/checkout@v7
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@v9.0.0
+        with: { enable-cache: true }
+      - run: uv sync --locked
+      - run: uv lock --check
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uvx pyright
+      - run: uv run pytest --cov --cov-fail-under=80
+      - run: uvx pip-audit
+
+  # The ONE required status check — branch protection requires this name.
+  ci-required:
+    needs: [python]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all gates passed
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "A required gate failed or was cancelled."; exit 1
+          fi
+          echo "All required gates passed."

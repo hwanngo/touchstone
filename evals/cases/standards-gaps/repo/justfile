@@ -1,0 +1,132 @@
+# Standard task-runner target contract — see standards/practices/collaboration.md.
+# `just` (https://just.systems). Every repo should expose: setup, lint, fmt, test, build, ci.
+# Delete the stacks you don't use.
+#
+# NEVER prefix a recipe line with `-`. In just that means "ignore this line's exit status": the
+# failure is printed and the recipe still exits 0, so a gate behind a `-` cannot fail. When a line
+# must not run because its stack or its tool is absent, skip it EXPLICITLY with an `if ... fi`
+# guard — that still fails loudly when the tool IS present and the command fails, which is the
+# distinction `-` throws away. Enforced by tests/gates/justfile-ignore-prefix.test.sh.
+#
+# COMMENT STYLE — just uses the LAST comment line before a recipe as that recipe's `--list` doc
+# string, so a multi-line explanation renders as a mangled tail fragment in the first command an
+# adopter ever runs. Keep prose in a block ABOVE, separated by a BLANK line, and put exactly one
+# short line directly above the recipe. Enforced by tests/gates/justfile-doc-comments.test.sh.
+#
+# `.touchstone/` — the vendored kit — is EXCLUDED from every gate and every formatter below. It is
+# a pinned submodule gated by its own CI: linting it fails this repo on somebody else's code, and
+# formatting it rewrites tracked files inside the pin the whole adoption model rests on. The Node
+# exclusion lives in biome.json (`files.includes`), because Biome has no CLI exclude flag and also
+# aborts with "nested root configuration" if it walks into the kit's own templates/biome.json.
+# Enforced by tests/gates/justfile-touchstone-scope.test.sh.
+#
+# NEVER pass `--no-errors-on-unmatched` to Biome. By default `biome ci` exits 1 when it matched no
+# files, which is the only zero-files-checked floor any of these tools offers — and biome.json's
+# `files.includes` is `**` minus vendored/build dirs precisely so a repo whose TypeScript lives
+# outside `src/` is linted rather than skipped with a green tick.
+
+default:
+    @just --list
+
+# install deps + git hooks. pre-commit is required in every touchstone repo, so a missing one is a
+# real setup failure. The per-stack installers run only when the manifest AND the tool are both
+# present, and say so when they skip; an installer that runs and fails (stale lockfile, network,
+# unresolvable constraint) fails `setup`.
+
+# install deps + git hooks
+setup:
+    pre-commit install
+    if [ -f pyproject.toml ]; then if command -v uv >/dev/null 2>&1; then uv sync; else echo "skip: uv not installed"; fi; fi
+    if [ -f package.json ]; then if command -v pnpm >/dev/null 2>&1; then pnpm install; else echo "skip: pnpm not installed"; fi; fi
+    if [ -f go.mod ]; then if command -v go >/dev/null 2>&1; then go mod download; else echo "skip: go not installed"; fi; fi
+
+# Gates run STRICTLY for each stack that's present (a real failure fails the recipe → fails `ci`);
+# absent stacks are skipped. A linter that is missing while its stack IS present fails too, on
+# purpose: a gate that could not run has not passed.
+
+# lint every stack present in this repo
+lint:
+    if [ -f pyproject.toml ]; then uv run ruff check . --extend-exclude .touchstone && uv run ruff format --check . --extend-exclude .touchstone; fi
+    if [ -f package.json ]; then pnpm biome ci .; fi
+    if [ -f go.mod ]; then golangci-lint run; fi
+
+# fmt mutates files (convenience, not a gate), so a stack whose formatter is absent is skipped
+# rather than fatal — but a formatter that IS present and fails (e.g. on a file it cannot parse)
+# fails `fmt`. The skip is per-tool and conditional, never a blanket `-`. gofumpt has no exclude
+# flag, so it is fed an explicit file list; `find -exec … +` runs it zero times when nothing matches.
+
+# format every stack present in this repo
+fmt:
+    if [ -f pyproject.toml ]; then if command -v uv >/dev/null 2>&1; then uv run ruff format . --extend-exclude .touchstone; else echo "skip: uv not installed"; fi; fi
+    if [ -f package.json ]; then if command -v pnpm >/dev/null 2>&1; then pnpm biome format --write .; else echo "skip: pnpm not installed"; fi; fi
+    if [ -f go.mod ]; then if command -v gofumpt >/dev/null 2>&1; then find . -name '*.go' -not -path './.git/*' -not -path './node_modules/*' -not -path './vendor/*' -not -path './.touchstone/*' -exec gofumpt -w {} +; else echo "skip: gofumpt not installed"; fi; fi
+
+# run every test suite present in this repo
+test:
+    if [ -f pyproject.toml ]; then uv run pytest -q --ignore=.touchstone; fi
+    if [ -f package.json ]; then pnpm test; fi
+    if [ -f go.mod ]; then go test -race ./...; fi
+
+# build every stack present in this repo
+build:
+    if [ -f package.json ]; then pnpm build; fi
+    if [ -f go.mod ]; then go build ./...; fi
+
+# what CI runs
+ci: lint test build
+
+# --- touchstone authoring (skipped in repos that don't carry these files) ---
+# audit the instruction files: skills (spec + spine), standards docs (template), description quality.
+# Each script runs only if this repo carries it — and when it does, a finding fails the recipe.
+
+# audit this repo's own skills + standards docs
+lint-skills:
+    if [ -f scripts/check-skills.sh ]; then bash scripts/check-skills.sh; else echo "skip: scripts/check-skills.sh not present"; fi
+    if [ -f scripts/check-standards.sh ]; then bash scripts/check-standards.sh; else echo "skip: scripts/check-standards.sh not present"; fi
+    if [ -f scripts/check-skill-quality.sh ]; then bash scripts/check-skill-quality.sh; else echo "skip: scripts/check-skill-quality.sh not present"; fi
+
+# regenerate the skills catalog (machine index) from frontmatter
+skill-catalog:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    if [ ! -f scripts/gen-skill-catalog.sh ]; then echo "skip: scripts/gen-skill-catalog.sh not present"; exit 0; fi
+    # Generate to a temp file, then move. Redirecting straight into skills/CATALOG.md truncates it
+    # before the generator runs, so a failed run would leave the committed catalog empty — and an
+    # empty catalog is exactly what a regenerate-and-diff freshness check cannot tell apart from a
+    # repo that legitimately has no skills.
+    bash scripts/gen-skill-catalog.sh >skills/CATALOG.md.tmp || { rm -f skills/CATALOG.md.tmp; exit 1; }
+    mv skills/CATALOG.md.tmp skills/CATALOG.md
+
+# lint this repo's shell: syntax, then shellcheck, then shfmt — the `shell` CI job in
+# templates/github/workflows/ci.yml. Skips cleanly when the repo carries no *.sh; a real finding
+# fails the recipe. `.touchstone/` is excluded: the vendored kit is gated by its own CI, and linting
+# it here would fail this repo's gate on somebody else's code.
+
+# shellcheck + shfmt this repo's *.sh
+lint-shell:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    files="$(mktemp)"
+    trap 'rm -f "$files"' EXIT
+    find . -name '*.sh' -not -path './.git/*' -not -path './node_modules/*' -not -path './.touchstone/*' -print0 >"$files"
+    if [ ! -s "$files" ]; then echo "skip: no *.sh in this repo"; exit 0; fi
+    rc=0
+    # -n1 matters: `bash -n a.sh b.sh` syntax-checks a.sh ONLY and passes the rest as positional
+    # arguments, so a broken second file exits 0. One file per invocation is the whole fix.
+    xargs -0 -n1 bash -n <"$files" || rc=1
+    if command -v shellcheck >/dev/null 2>&1; then xargs -0 shellcheck <"$files" || rc=1; else echo "skip: shellcheck not installed"; fi
+    if command -v shfmt >/dev/null 2>&1; then xargs -0 shfmt -d -i 2 <"$files" || rc=1; else echo "skip: shfmt not installed"; fi
+    exit "$rc"
+
+# The fast pre-flight before the full `lint-shell`: a broken hook fails in seconds
+# rather than after shellcheck and shfmt have walked the whole tree.
+
+# bash -n every *.sh in this repo
+hooks-check:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    files="$(mktemp)"
+    trap 'rm -f "$files"' EXIT
+    find . -name '*.sh' -not -path './.git/*' -not -path './node_modules/*' -not -path './.touchstone/*' -print0 >"$files"
+    if [ ! -s "$files" ]; then echo "skip: no *.sh in this repo"; exit 0; fi
+    xargs -0 -n1 bash -n <"$files"

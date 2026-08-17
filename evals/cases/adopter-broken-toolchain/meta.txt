@@ -1,0 +1,4 @@
+agent: adoption-doctor
+summary: an adopter whose pre-commit config names a hook id that does not exist at its pinned rev, and whose justfile lint recipe has no .touchstone/ exclusion
+min_recall: 100
+max_unmatched: 2

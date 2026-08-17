@@ -1,0 +1,42 @@
+[project]
+name = "widget-api"
+version = "0.1.0"
+description = "Internal widget catalogue API."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = [".touchstone"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "C4", "UP", "SIM", "PT", "S", "RUF",
+          "PIE", "PTH", "RET", "TID", "TC", "FA", "PERF", "DTZ", "ISC", "G", "LOG"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"**/conftest.py" = ["S101"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]

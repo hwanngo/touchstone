@@ -1,0 +1,3 @@
+required|src/config.py|hardcoded credential
+required|.github/workflows/ci.yml|unpinned action
+optional|README.md|stale badge

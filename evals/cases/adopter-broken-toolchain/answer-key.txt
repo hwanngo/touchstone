@@ -1,0 +1,19 @@
+required|.pre-commit-config.yaml|hook id
+required|justfile|vendored kit
+optional|git|not a git repository
+optional|.touchstone:|absent
+optional|AGENTS.md|resolve
+optional|AGENTS.md|routing rules
+optional|scripts/init.sh|absent
+optional|scripts/check-sync.sh|absent
+optional|.github/workflows/ci.yml|absent
+optional|.github/workflows|CI workflow
+optional|justfile|`setup` recipe
+optional|justfile|`fmt` recipe
+optional|justfile|command not found
+optional|justfile|distinguish bad input from good input
+optional|pyproject.toml|absent
+optional|uv.lock|absent
+optional|.editorconfig|absent
+optional|.gitattributes|absent
+optional|bootstrap_helper.py|unused

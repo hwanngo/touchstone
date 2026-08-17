@@ -1,0 +1,22 @@
+required|pyproject.toml|uv.lock
+required|.github/workflows/ci.yml|actions/checkout@v7
+required|scripts/setup.sh|pip install
+optional|SECURITY.md|absent
+optional|pyproject.toml|pyright
+optional|.github/CODEOWNERS|your-org
+optional|.github/workflows/ci.yml|CodeQL
+optional|.github/workflows/ci.yml|dependency-review
+optional|.github/workflows/ci.yml|release
+optional|CHANGELOG.md|absent
+optional|.github/workflows/ci.yml|schedule
+optional|dependabot.yml|renovate
+optional|.pre-commit-config.yaml|commitlint
+optional|justfile|pip-audit
+optional|.touchstone/standards|python.md
+optional|.pre-commit-config.yaml|markdownlint
+optional|.pre-commit-config.yaml|lychee
+optional|docs/adr/0001-use-fastapi-and-uv.md|alternative
+optional|tests/test_health.py|hardcoded
+optional|justfile|flaky
+optional|.pre-commit-config.yaml|shellcheck
+optional|.github/workflows/ci.yml|shellcheck

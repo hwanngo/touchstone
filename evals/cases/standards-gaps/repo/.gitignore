@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.DS_Store
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# per-developer AI-assistant scratch — never shared, never committed
+.claude/settings.local.json
+.aider*

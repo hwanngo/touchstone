@@ -218,6 +218,103 @@ EOF
 }
 
 # ---------------------------------------------------------------------------------------------
+# The declared-level checker: is `.touchstone.toml`'s own `level` consistent with the maturity
+# model's definition — a CONFORMANCE CLAIM ("the highest level at which every applicable item is
+# currently ✅"), never a target still being worked toward (standards/self-audit.md's "## Maturity
+# levels" section, and the ruling recorded in .touchstone.toml itself)? A pure function of <root>,
+# exactly like check_self_audit_levels above, and for the same reason: a checker that self-located
+# would grade the real repo while appearing to grade the fixture it was handed.
+#
+# The valid ceiling is READ from the same table declared_levels() already parses — nothing here
+# hardcodes "4" a second time, so this row and the forward/reverse pin above share one source of
+# truth and cannot drift apart. 0 is accepted below the table's own floor: the table declares only
+# L1..L4, and a repo that fails an L1 item conforms at no level, which has to be expressible as a
+# value or the schema cannot state that finding honestly — see .touchstone.toml's own comment.
+# ---------------------------------------------------------------------------------------------
+
+MARKER_FILE=".touchstone.toml"
+
+# declared_level <toml> — the raw text after the first `level =` line's `=`, trimmed of
+# surrounding whitespace and any trailing `# comment`. NOT validated as numeric here — that is
+# check_declared_level's job, so a garbage value is reported with the field it came from rather
+# than silently read as empty.
+declared_level() {
+  awk -F'=' '
+    /^[[:space:]]*level[[:space:]]*=/ {
+      val = $2
+      sub(/#.*$/, "", val)
+      sub(/^[[:space:]]+/, "", val)
+      sub(/[[:space:]]+$/, "", val)
+      print val
+      exit
+    }
+  ' "$1" 2>/dev/null
+}
+
+# max_declared_level <newline-separated-levels> — the highest integer suffix among "L1 L2 L3
+# L4"-style tokens. Non-"L<n>" tokens (a renamed level, say) are ignored here on purpose: the
+# forward/reverse pin above already fails the build if the model uses a level id checklist items
+# never carry or vice versa, so this function only needs a ceiling, not full validation.
+max_declared_level() {
+  printf '%s\n' "$1" | sed -n 's/^L\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1
+}
+
+check_declared_level() {
+  local root="$1"
+  local doc="$root/$CHECKLIST_DOC"
+  local marker="$root/$MARKER_FILE"
+  local levels="" ceiling="" raw="" rc=0
+
+  if [ ! -f "$doc" ]; then
+    echo "FAIL: no $CHECKLIST_DOC under $root — the maturity model '$MARKER_FILE's level is validated against could not be read."
+    return 1
+  fi
+  if [ ! -f "$marker" ]; then
+    echo "FAIL: no $MARKER_FILE under $root — the repo has not declared a conformance level at all."
+    return 1
+  fi
+
+  levels="$(declared_levels "$doc")"
+  if [ -z "$levels" ]; then
+    echo "FAIL: $CHECKLIST_DOC declares no maturity levels — nothing to validate $MARKER_FILE's level against."
+    return 1
+  fi
+  ceiling="$(max_declared_level "$levels")"
+  if [ -z "$ceiling" ]; then
+    echo "FAIL: could not read a numeric ceiling out of the declared levels ($levels)."
+    return 1
+  fi
+
+  if grep -qF -e "UNREVIEWED" "$marker"; then
+    echo "FAIL: $MARKER_FILE still carries an UNREVIEWED marker — the declared level has never been confirmed against the repo as it stands, so it is not a claim yet."
+    rc=1
+  fi
+
+  raw="$(declared_level "$marker")"
+  if [ -z "$raw" ]; then
+    echo "FAIL: $MARKER_FILE declares no 'level' key at all."
+    rc=1
+  else
+    case "$raw" in
+    *[!0-9]*)
+      echo "FAIL: $MARKER_FILE's level '$raw' is not a plain non-negative integer."
+      rc=1
+      ;;
+    *)
+      if [ "$raw" -gt "$ceiling" ]; then
+        echo "FAIL: $MARKER_FILE declares level $raw, above the ceiling $CHECKLIST_DOC's maturity model declares (0-$ceiling, where 0 means 'conforms at no level')."
+        rc=1
+      else
+        echo "level $raw is within 0-$ceiling, the range $CHECKLIST_DOC's maturity model declares."
+      fi
+      ;;
+    esac
+  fi
+
+  return "$rc"
+}
+
+# ---------------------------------------------------------------------------------------------
 # Harness
 # ---------------------------------------------------------------------------------------------
 
@@ -238,12 +335,15 @@ assert_fixture() {
   assert_eq "fixture $fixture is complete on disk" "complete" "$state"
 }
 
-# run_check <fixture-name> — copies tests/fixtures/<fixture-name> into a fresh tmp tree and runs
-# check_self_audit_levels against that tree, leaving CHK_RC / CHK_OUT set.
+# run_check <fixture-name> [checker-fn] — copies tests/fixtures/<fixture-name> into a fresh tmp
+# tree and runs <checker-fn> (default check_self_audit_levels) against that tree, leaving
+# CHK_RC / CHK_OUT set. The checker-fn parameter lets check_declared_level's rows below reuse this
+# same copy-into-a-fresh-tmp-tree harness instead of a second, drift-prone copy of it.
 CHK_RC=0
 CHK_OUT=""
 run_check() {
   local fixture="$1"
+  local fn="${2:-check_self_audit_levels}"
   if [ ! -d "$FIXTURES/$fixture" ]; then
     # Refuse to run rather than silently check an empty tree.
     CHK_RC=126
@@ -259,7 +359,7 @@ run_check() {
   mkdir -p "$WORK/repo"
   cp -R "$FIXTURES/$fixture/." "$WORK/repo/"
   CHK_RC=0
-  CHK_OUT="$(check_self_audit_levels "$WORK/repo" 2>&1)" || CHK_RC=$?
+  CHK_OUT="$("$fn" "$WORK/repo" 2>&1)" || CHK_RC=$?
   rm -rf "$WORK"
   WORK=""
 }
@@ -392,5 +492,92 @@ assert_eq "touchstone: every level its model declares is carried by at least one
 REAL_ITEMS="$(printf '%s\n' "$REAL_OUT" | sed -n 's/^Examined \([0-9][0-9]*\) checklist item(s).*/\1/p')"
 [ -n "$REAL_ITEMS" ] || REAL_ITEMS=0
 assert_eq "touchstone: every checklist item was matched, exactly" "168" "$REAL_ITEMS"
+
+# ---------------------------------------------------------------------------------------------
+# Rows: check_declared_level — is .touchstone.toml's `level` a real conformance claim?
+# ---------------------------------------------------------------------------------------------
+
+FIX_MARKER=".touchstone.toml"
+
+# The control: a mid-range value with no UNREVIEWED marker passes cleanly.
+assert_fixture "self-audit-levels-marker-good" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-good" check_declared_level
+assert_eq "a plain in-range level with no UNREVIEWED marker: exits 0" "0" "$CHK_RC"
+assert_contains "in-range level: says which range it read out of the table" \
+  "level 2 is within 0-4, the range standards/self-audit.md's maturity model declares" "$CHK_OUT"
+
+# 0 is the explicit "conforms at no level" sentinel — it must pass, not just avoid crashing, or a
+# repo that honestly fails L1 would have no truthful value it could declare at all.
+assert_fixture "self-audit-levels-marker-zero" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-zero" check_declared_level
+assert_eq "level 0 (conforms at no level) is accepted, not just tolerated: exits 0" "0" "$CHK_RC"
+assert_contains "level 0: named as in-range, not silently passed" "level 0 is within 0-4" "$CHK_OUT"
+
+# The other boundary: exactly the table's ceiling.
+assert_fixture "self-audit-levels-marker-ceiling" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-ceiling" check_declared_level
+assert_eq "level == the table's own ceiling: exits 0" "0" "$CHK_RC"
+assert_contains "ceiling level: named as in-range" "level 4 is within 0-4" "$CHK_OUT"
+
+# One past the ceiling — the mutation this row exists to catch.
+assert_fixture "self-audit-levels-marker-oor" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-oor" check_declared_level
+assert_eq "level above the table's ceiling: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "out-of-range level: names the value and the ceiling" \
+  "declares level 9, above the ceiling standards/self-audit.md's maturity model declares (0-4, where 0 means 'conforms at no level')" "$CHK_OUT"
+
+# Below the 0 floor — a different mutation with the same class of defect, caught the same way.
+assert_fixture "self-audit-levels-marker-negative" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-negative" check_declared_level
+assert_eq "a negative level: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "negative level: rejected as not a plain non-negative integer" \
+  "level '-1' is not a plain non-negative integer" "$CHK_OUT"
+
+# A value that isn't a number at all.
+assert_fixture "self-audit-levels-marker-nonnumeric" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-nonnumeric" check_declared_level
+assert_eq "a non-numeric level: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "non-numeric level: names the offending value" "level 'high' is not a plain non-negative integer" "$CHK_OUT"
+
+# No `level` key at all.
+assert_fixture "self-audit-levels-marker-missing-level" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-missing-level" check_declared_level
+assert_eq "no level key at all: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "no level key: says so" "declares no 'level' key at all" "$CHK_OUT"
+
+# The UNREVIEWED marker itself — the defect this whole row set exists to catch (this repo shipped
+# `level = 4` behind exactly this marker before task 9).
+assert_fixture "self-audit-levels-marker-unreviewed" "$FIX_DOC" "$FIX_MARKER"
+run_check "self-audit-levels-marker-unreviewed" check_declared_level
+assert_eq "an UNREVIEWED marker present: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "UNREVIEWED marker: names the defect" "still carries an UNREVIEWED marker" "$CHK_OUT"
+# The marker's value (2) is otherwise perfectly in-range — proves the UNREVIEWED check fires
+# independently of the range check, not merely alongside a value that would fail anyway.
+assert_eq "UNREVIEWED marker: the in-range value itself is not also reported as out of range" "absent" "$(out_has "above the ceiling")"
+
+# No .touchstone.toml at all.
+assert_fixture "self-audit-levels-marker-no-marker" "$FIX_DOC"
+run_check "self-audit-levels-marker-no-marker" check_declared_level
+assert_eq "no .touchstone.toml under the root: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "no marker file: says the repo declared no level at all" "the repo has not declared a conformance level at all" "$CHK_OUT"
+
+# .touchstone.toml present, but no self-audit.md to validate its level against.
+assert_fixture "self-audit-levels-marker-no-doc" "$FIX_MARKER"
+run_check "self-audit-levels-marker-no-doc" check_declared_level
+assert_eq "marker present but no checklist doc: exits non-zero" "nonzero" "$(nonzero)"
+assert_contains "no doc: says the model could not be read" "the maturity model '$MARKER_FILE's level is validated against could not be read" "$CHK_OUT"
+
+# ---------------------------------------------------------------------------------------------
+# Rows: the real repo's own .touchstone.toml. The fixtures prove the checker works; this proves
+# touchstone's own declared level is honest by the checker's rule, not merely by inspection.
+# ---------------------------------------------------------------------------------------------
+
+REAL_MARKER_RC=0
+REAL_MARKER_OUT="$(check_declared_level "$KIT" 2>&1)" || REAL_MARKER_RC=$?
+assert_eq "touchstone's own .touchstone.toml declares a level consistent with the definition" "0" "$REAL_MARKER_RC"
+CHK_OUT="$REAL_MARKER_OUT"
+assert_eq "touchstone: no UNREVIEWED marker remains" "absent" "$(out_has "UNREVIEWED marker")"
+assert_contains "touchstone: level 0 ('conforms at no level') is read as in-range, not rejected" \
+  "level 0 is within 0-4, the range standards/self-audit.md's maturity model declares" "$CHK_OUT"
 
 ts_report

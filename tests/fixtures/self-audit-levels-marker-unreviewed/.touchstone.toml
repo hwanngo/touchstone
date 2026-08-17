@@ -1,0 +1,5 @@
+version = "0.0.0"
+stacks = []
+# UNREVIEWED (2026-01-01): placeholder pending human confirmation.
+level = 2
+waivers = []

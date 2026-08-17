@@ -1,0 +1,4 @@
+agent: currency-researcher
+summary: a local Django standards doc asserting a stale LTS version, plus a non-existence claim about the repo's own docs that the repo itself contradicts
+min_recall: 100
+max_unmatched: 0

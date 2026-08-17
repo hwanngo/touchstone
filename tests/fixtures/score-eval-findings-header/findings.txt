@@ -1,0 +1,6 @@
+# produced 2026-08-17 with sonnet; replaying this file regresses the scorer and the answer key,
+# not the agent.
+
+   # an indented comment is a comment too — the first NON-WHITESPACE character is '#'
+src/config.py: hardcoded credential on line 12
+.github/workflows/ci.yml: unpinned action actions/checkout@v4

@@ -1,0 +1,2 @@
+required|src/config.py|hardcoded credential
+required|.github/workflows/ci.yml|unpinned action

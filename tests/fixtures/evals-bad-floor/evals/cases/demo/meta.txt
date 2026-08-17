@@ -1,0 +1,4 @@
+agent: demo-agent
+summary: a case whose meta.txt carries a non-numeric max_unmatched floor — the malformed-floor gate this task adds
+min_recall: 100
+max_unmatched: lots

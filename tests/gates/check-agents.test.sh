@@ -34,6 +34,17 @@
 #      verdict should carry, so neither "non-zero" nor "0" is ever accepted on its own.
 set -uo pipefail
 
+# The kit-only gates carry a POSITIONAL scope guard: they refuse to run when their own root is named
+# `.touchstone` or when its PARENT is a git work tree, because from there a green verdict would
+# describe the kit instead of the caller's repo (see any check-*.sh header). This file relocates the
+# gate into a temp tree by design, so if `TMPDIR` happens to sit inside a git repository — a
+# perfectly ordinary setup — every relocated row would fail with "refusing to run" instead of
+# exercising the behaviour under test. `TOUCHSTONE_ALLOW_NESTED=1` is the escape hatch the guard
+# itself documents for exactly this case, and it is set here rather than left to the environment.
+# The guard's own behaviour is NOT weakened by this: tests/gates/gate-scope-guard.test.sh sets the
+# variable explicitly per row (defaulting to 0), so it still proves both the refusal and the hatch.
+export TOUCHSTONE_ALLOW_NESTED=1
+
 DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091 # resolved relative to this file at runtime, same as every other test file
 . "$DIR/../lib/assert.sh"
@@ -331,10 +342,10 @@ awk_sabotage_rc() {
     return 0
   fi
   dir="$(mktemp -d 2>/dev/null || true)"
-  [ -n "$dir" ] && [ -d "$dir" ] || {
+  if [ -z "$dir" ] || [ ! -d "$dir" ]; then
     printf 'NO TMPDIR\n'
     return 0
-  }
+  fi
   mkdir -p "$dir/repo/scripts"
   cp "$GATE" "$dir/repo/scripts/check-agents.sh"
   cp -R "$FIXTURES/agents-known-good/." "$dir/repo/"

@@ -1,0 +1,7 @@
+default: ci
+
+lint:
+    ruff check .
+    ruff format --check .
+
+ci: lint

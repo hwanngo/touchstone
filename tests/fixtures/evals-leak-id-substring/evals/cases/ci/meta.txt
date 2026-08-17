@@ -1,0 +1,4 @@
+agent: demo-agent
+summary: a case whose id is a common word; repo/ mentions that word only inside longer words, which must not read as a leak
+min_recall: 100
+max_unmatched: 1

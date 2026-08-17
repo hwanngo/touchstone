@@ -65,42 +65,115 @@ The full deny set, so nothing blocks you without warning:
 
 | Denied | Do this instead |
 |---|---|
-| `git commit/push --no-verify` (and any `--no-ver…` prefix) | fix the failing gate |
+| `git commit/push/merge --no-verify` (and any `--no-ver…` prefix except `--no-verb…` and `--no-verify-…`) | fix the failing gate |
 | `git commit -n`, or a short cluster containing it (`-nq`) | fix the failing gate |
-| `git -c core.hooksPath=… commit/push` | fix the failing gate |
-| `HUSKY=0`, `SKIP=…`, `PRE_COMMIT_ALLOW_NO_CONFIG=…` in front of `git commit/push` | fix the failing gate |
+| `git -c core.hooksPath=… commit/push/merge`, `git -ccore.hooksPath=…`, `git --config-env=core.hooksPath=…` (the key is matched case-insensitively, as git itself matches it) | fix the failing gate |
+| `git config [--local/--global/--system] core.hooksPath <path>` — a *persistent* hook disable | fix the failing gate |
+| `HUSKY=0`, `HUSKY_SKIP_HOOKS=…`, `SKIP=…`, `PRE_COMMIT_ALLOW_NO_CONFIG=…`, `GIT_CONFIG_KEY_n=core.hooksPath` in front of `git commit/push/merge` | fix the failing gate |
 | `git push --force` / `-f` / a short cluster containing `-f`, without a lease | `git push --force-with-lease` |
+| `git push --force --force-if-includes` (`--force` disables the lease checks, so this is not a lease) | `git push --force-with-lease` |
 | `git push origin +branch` (a force refspec) | `git push --force-with-lease` |
-| Writing a `.env`-family file through a Bash redirect, `tee`, `cp`, `mv` or `sed -i` | keep secrets out of the repo |
+| Writing a `.env`-family file through a Bash redirect (`>`, `>>`, `>\|`, `&>`, `<>`), `tee`, `cp`, `mv`, `install`, `rsync`, `ln`, `dd of=`, curl/wget's output option in any of its spellings (`-o`/`-O`, attached `-o.env`/`-O.env`, `--output=`/`--output-document=`), or an in-place `sed -i`/`perl -pi` | keep secrets out of the repo |
 
-Two of those are worth calling out because they are *not* pure bypasses:
+All of those are recognized behind a **leading wrapper** (`sudo -u deploy`, `doas`, `env -i`,
+`command -p`, `timeout 60`, `nice -n 10`) and behind a **path-qualified command word**
+(`/usr/bin/git`, `/bin/cp`) — but only for that fixed wrapper set, so `echo git push --force`,
+which pushes nothing, still allows.
+
+Three of those are worth calling out because they are *not* pure bypasses:
 
 - **`SKIP=<hook-id> git commit`** is a legitimate pre-commit idiom for skipping one named hook. The
   guard denies it anyway, because it cannot tell a targeted skip from `SKIP=` used to disable the
   hook that is failing. Run the commit without the prefix, or fix the hook.
 - **`git push -o <push-option>`** is fine, but `-fd`/`-df` (force + delete) is denied like any
-  other force-push, and `git mv onto-a.env-name` is denied because `mv` is a write command
-  wherever it appears.
+  other force-push.
+- **`git config core.hooksPath`** denies only a *set*. `--get`, `--list` and `--unset` are allowed
+  — unsetting the key is how you undo the bypass, so denying it would block the fix.
 
-The guard checks **file names only** for the `.env` family (`.env`, `.env.*`, `.envrc`, `*.env`,
-minus `*.example.*`/`*.sample.*`/`*.template.*`). It does **not** inspect content and has **no
-private-key detection at all** — neither by filename nor by body. Only `block-secrets.sh`, on the
-Write/Edit tools, checks for private-key *content*.
+A writer is recognized **at the command word only** (after any leading assignments, wrapper
+keywords and wrapper options), or in a multi-call *shell-utility* dispatcher's subcommand slot
+(`busybox cp`, `toybox mv`). A writer *name* that is merely an argument is not a write:
+`grep -l cp .env` reads a file and is allowed. `git mv old.env new.env` is allowed too — it
+renames a file git already tracks, so no secret content enters the repo that was not already in
+it. The redirect rule is what covers git (`git config -l > .env` still denies).
+
+Flag **values** are not scanned as flags. `git commit -m "-nope"` commits with that message and
+is allowed; `git push -o --force` sets a push-option string and force-pushes nothing. Exactly one
+word is consumed, so `git commit -m x --no-verify` still denies.
+
+`--no-verbose` is **allowed**. It is parse-options auto-negation of `-v/--verbose` and has nothing
+to do with hooks; `--no-verb…` is the shortest prefix that belongs to it and not to `--no-verify`.
+
+`--no-verify-signatures` is **allowed** too, and so is any prefix of it that is longer than
+`--no-verify` itself (`--no-verify-s…`, `--no-verify-`). It is a real option of `git merge` and
+`git pull` — the negation of `--verify-signatures` — and has nothing to do with hooks either; the
+earlier fix missed it because it is spelled with the whole `--no-verify` prefix in front. None of
+those spellings can reach git's `--no-verify`, which is a *shorter* string and so is not prefixed
+by any of them.
+
+So there are **two** carve-outs, not one: `--no-verb…` and `--no-verify-…`. Everything else under
+`--no-ver…` stays denied — `--no-verify` itself, and the shorter abbreviations `--no-ver`,
+`--no-veri`, `--no-verif`, which for `git commit`/`git push` really do resolve to `--no-verify`.
+
+The guard checks **file names only** for the `.env` family (`.env`, `.env.*`, `.env-*`, `.env_*`,
+`.envrc`, `.envrc.*`, `.flaskenv`, `*.env`, and the dotless `env.<deployment-stage>`, minus
+`*.example.*`/`*.sample.*`/`*.template.*`; a trailing `~` is stripped first, so `.env~` denies and
+`README.md~` does not). It does **not** inspect content and has **no private-key detection at
+all** — neither by filename nor by body. Only `block-secrets.sh`, on the Write/Edit tools, checks
+for private-key *content*.
+
+The dotless family is matched against a fixed list of stage words (`env.production`, `env.staging`,
+`env.local`, …) rather than a blanket `env.*`, and that narrowness is deliberate: `src/env.ts`,
+`src/env.mjs` and `env.d.ts` are ordinary application source in every modern TypeScript project.
+A blanket rule would deny writing them, and a guard that blocks legitimate work gets switched off.
 
 **What the Bash guard does not see.** Commands are analyzed by redacting quoted spans and
 comments, then splitting into segments on `;`, `&&`, `||`, `|`, `|&`, a bare `&`, a **newline**,
-and grouping characters (`(` `)` `{` `}`), evaluating each segment independently. Before testing
-for `git`, a fixed set of leading shell keywords (`if`/`while`/`for`/`case`/`eval`/`sudo`/`env`/…)
-and leading redirections are skipped, and a word glued to a redirect operator (`git>out`) is split
-apart first. The command word may carry a path (`/usr/bin/git`). A second, unredacted view of the
-same buffer — built from the same scan, characters outside a safe whitelist replaced — is what the
-rules actually read, so a quoted flag (`git push "--force"`) or a quoted `.env` target is still
-seen; only actual redirect targets and `tee`/`cp`/`mv`/`sed -i` arguments are treated as write
-targets, never every token in the segment.
+and grouping `(` `)` `{` `}`, evaluating each segment independently. Three of those separators are
+*conditional*, because each is also an ordinary character inside a token: `&` does not separate
+next to a redirection arrow (`2>&1`), `|` does not separate after a `>` (`>|` is the
+noclobber-override redirect), and `{`/`}` separate only where bash reads them as command grouping
+— `{` followed by whitespace, `}` preceded by whitespace. That last one is what keeps
+`cat secrets.txt > ${HOME}/.env` in one piece; splitting it unconditionally left no segment
+holding both the redirect and its target. A brace group containing a **comma** is expanded before
+the name test, so `cp .env{,.bak}` is seen, while `cp .env.example{,.bak}` still allows.
 
-Because a newline is a segment separator, a **heredoc body** is analyzed line by line like any
-other input: a line inside a `<<'EOF'` block that reads like a policy violation is denied even
-though the shell would never execute it.
+Before testing for `git`, a fixed set of leading shell keywords
+(`if`/`while`/`for`/`case`/`eval`/`sudo`/`doas`/`env`/`timeout`/`nice`/…) and leading redirections
+are skipped — for the wrappers in that set, their own options are skipped too — and a word glued
+to a redirect operator (`git>out`) is split apart first. The command word may carry a path
+(`/usr/bin/git`, `/bin/cp`). A second, unredacted view of the same buffer — built from the same
+scan, characters outside a safe whitelist replaced — is what the rules actually read, so a quoted
+flag (`git push "--force"`) or a quoted `.env` target is still seen; only actual redirect targets
+and the arguments of a writer *at the command word* are treated as write targets, never every
+token in the segment.
+
+A **heredoc body** is skipped. It is data the shell feeds a command on stdin, never command text,
+so a line inside a `<<'EOF'` block that merely *describes* a banned command is not a violation —
+writing `docs/policy.md` that explains why force-pushing is banned used to be denied for saying
+so. The heredoc operator is detected inside the scanner rather than by a text pre-pass, because
+only the scanner knows quote state: a `<<` inside a quoted string (`echo "a << b"`) must not start
+a heredoc, and mis-detecting one would swallow following lines of real command text. The
+**command line itself is still analyzed in full**, so `cat <<EOF > .env` still denies on its
+redirect target, and command text after the terminator line is command text again.
+
+That swallow hazard was **real, not hypothetical**: `n=$((1<<3))` on one line and a force-push on
+the next used to allow, because the delimiter scan stops at `)` and so read a heredoc with the
+delimiter `3`, whose terminator line never came — the body-skip then dropped every remaining line
+before any rule saw it. Two guards now make it unreachable, and both are asserted:
+
+- **`<<` inside `$(( … ))` / `(( … ))` is left-shift, not a heredoc operator.** The scanner tracks
+  arithmetic nesting for the same reason it tracks quotes — it is the only place that knows the
+  `((` is not itself quoted, commented out, or backslash-escaped.
+- **A delimiter with no terminator line ahead of it is not a heredoc at all.** Such a command could
+  not run as written (the shell would block on stdin), so it is either a mis-parse or a deliberate
+  swallow; either way its following lines are analyzed rather than dropped. This is what closes the
+  multi-line spelling (`$((1` / `<<3))`) that arithmetic tracking alone cannot see.
+
+The residual: an *unbalanced* unquoted `((` — `echo ((`, which is a bash syntax error — leaves the
+scanner in arithmetic state, so a heredoc later in the same command string is not recognized and
+its body is analyzed as command text. That is the bounded false positive this section is about,
+on input no shell will run, and never a silent hole.
 
 The guard matches literal argv tokens in the command string it is handed — it does not interpret
 the shell. That is what makes the following accepted limits (not an exhaustive list) inherent
@@ -116,14 +189,57 @@ rather than incidental bugs, each verified against the live hook:
   commit` and `git push origin "+main:main"` allow, while their unquoted forms deny. The unredacted
   view maps `=` and `+` to `_`, so those two patterns no longer match. The *flag* rules
   (`--no-verify`, `--force`, `-n`, `-f`) are **not** affected — quoting those is caught.
-- **A quoted commit message that is a single hyphen-led word of letters** (`-m "-nope"`) denies:
-  with the quotes stripped it is textually identical to a flag cluster. Any space, digit or
-  punctuation in the message avoids this — which is every ordinary message.
+- **ANSI-C quoting**: `git push $'\x2d\x2dforce' origin main` allows, as do the octal
+  (`$'\055\055force'`) and `--` spellings, and the same trick on
+  `--no-verify`, `-n`, `-f` and on a redirect target (`> $'\x2eenv'`). This is a **verified live
+  bypass, not a theoretical one** — the `\x` and octal forms expand in bash 3.2, `sh` and zsh, and
+  `\u` expands in zsh (bash 3.2 passes it through literally). It stays open on a triage judgment,
+  not because it is hard: nobody writes a hex-escaped `--force` by accident, so it fires only
+  under deliberate obfuscation, and decoding escape sequences inside the guard's single
+  load-bearing scanner would mean interpreting the shell rather than matching its tokens — the
+  same line every other limit here sits behind, on the piece of code where a mistake is most
+  expensive.
+- **`git push --mirror`** allows. It force-updates *and deletes* remote refs with no lease, so it
+  is squarely the harm the force-push rule exists to prevent — but it is also the documented way
+  to maintain a mirror, a distinct workflow rather than a spelling of `--force`. Adding it would
+  change what the deny table *means*, which is a policy decision for this kit's owner and not a
+  matcher fix; it is listed here so the gap is known rather than silent.
 
-Closing any of these would require actually interpreting the shell (tracking variable
+Closing the first four of these would require actually interpreting the shell (tracking variable
 assignments, expanding substitutions, recursing into nested interpreters) rather than matching
 tokens, which is a different, much larger guard than this one. These are fail-open advisory
 guards, not a sandbox — `pre-commit` and branch protection are the enforcing layers.
+
+### What the Write guard denies, and what it deliberately does not
+
+`block-secrets.sh` denies a write whose **path** is in the `.env` family above, and a write whose
+**content** contains a private key: a PEM `BEGIN` **or** `END` line with four or five dashes and a
+label that may contain digits (so the RFC 4716 / ssh.com `---- BEGIN SSH2 ENCRYPTED PRIVATE KEY
+----` spelling is covered, and a key whose header is mangled but whose footer is intact no longer
+walks through), or a PuTTY `.ppk` header line. A single `MultiEdit` is checked both with its edits
+joined by newlines and joined by nothing, so one call cannot reassemble a header on disk out of
+two fragments that never share a line.
+
+Its stated limits:
+
+- **The header must begin a line** (indentation allowed, for keys embedded in YAML or JSON).
+  Security documentation that quotes a header mid-sentence is allowed — writing the docs that
+  explain what a private key looks like is work this kit exists to do, and denying it was a false
+  positive that trained people to switch the guard off.
+- **A `fixtures`/`testdata`/`test-fixtures`/`__fixtures__` path component exempts the *content*
+  check.** Crypto, TLS and SSH suites legitimately commit throwaway test keys. The exemption is a
+  full path component, never a substring, and it does **not** relax the path check: a
+  `tests/fixtures/.env` is still denied — asserted, not merely claimed, by the `path_case deny
+  "tests/fixtures/.env"` rows in `tests/hooks/block-secrets.test.sh`.
+- **Private keys only.** AWS access keys, database passwords and other non-PEM credential material
+  are out of scope by design; `gitleaks` in pre-commit and CI is the backstop for those.
+- **No cross-call state.** Two Write/Edit calls that are innocuous individually and assemble a key
+  between them are not detected. Each hook invocation sees one tool call and nothing else. Two edits
+  in ONE `MultiEdit` call are a different case and *are* detected, for both the PEM header and the
+  PuTTY magic line: the guard matches a second view of the same fields joined with no separator.
+- **Templating suffixes are not stripped**, so `secrets/db.env.j2` allows. A `.j2`/`.tpl`/`.tmpl`
+  file is a template meant to be committed — the same reason `*.example.*` is allowlisted — and
+  stripping the suffix would deny ordinary template work.
 
 ## Install
 

@@ -22,9 +22,15 @@ gates:
     bash scripts/check-agents.sh
     bash scripts/check-links.sh
     bash scripts/check-skill-quality.sh
+    bash scripts/check-evals.sh
     bash scripts/check-sync.sh
 
 ci: lint test gates
+
+# NOT part of `just ci`: it needs a model call, so it is neither hermetic nor offline.
+# Evaluate an agent against an eval case; see evals/README.md.
+eval case findings="":
+    bash scripts/run-eval.sh --case {{ case }} --findings {{ findings }} --confirm-model-call
 
 # Decision-differential gate for hooks/guard-bash.sh — NOT part of `ci`, and deliberately so:
 # this is machinery for a human to run explicitly before landing any change to that one file

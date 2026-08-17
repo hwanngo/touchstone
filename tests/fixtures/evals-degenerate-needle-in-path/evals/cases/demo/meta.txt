@@ -1,0 +1,4 @@
+agent: demo-agent
+summary: a well-formed fixture case used to prove check-evals.sh passes on a case whose answer key matches its repo
+min_recall: 100
+max_unmatched: 1

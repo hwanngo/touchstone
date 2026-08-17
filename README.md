@@ -124,8 +124,10 @@ pinact run                           # pin GitHub Actions to commit SHA
 pre-commit install && just ci        # install hooks + run the gates
 ```
 
-Then score the repo against the [self-audit checklist](standards/self-audit.md) at your target
-[maturity level](standards/self-audit.md#maturity-levels) and close the gaps. Stay in sync as the
+Then score the repo against the [self-audit checklist](standards/self-audit.md), set `level` in
+`.touchstone.toml` to the highest [maturity level](standards/self-audit.md#maturity-levels) every
+applicable item actually passes at — a conformance claim, not an aspiration — and keep closing gaps
+toward the next one. Stay in sync as the
 kit evolves with `./.touchstone/scripts/check-sync.sh` (wire it into CI); read
 [`CHANGELOG.md`](CHANGELOG.md) when bumping the pinned version.
 
@@ -171,6 +173,35 @@ into your repo (nothing to copy by hand) — each defers to `AGENTS.md`, so no r
 are generated at adoption time. Per-tool *scratch/settings* stay gitignored — only the generated,
 reviewed rule files are committed in your repo (see
 [collaboration.md §4](standards/practices/collaboration.md)).
+
+## Evals
+
+`AGENTS.md` and `hooks/` state and enforce the rules; `agents/` (`standards-auditor`,
+`currency-researcher`, `adoption-doctor`, `guardrail-redteam`, `drift-watcher`, `eval-runner`) are
+subagents that *act* on them — auditing a repo, checking a claim, diagnosing a broken adoption. An
+**eval** is how this kit proves one of those subagents actually finds what it claims to, instead of
+trusting a description that sounds right: a small, deliberately broken fixture repo under
+`evals/cases/<case-id>/repo/`, plus a catalogued `answer-key.txt` naming exactly which defects a
+correct run must surface. See [`evals/README.md`](evals/README.md) for the full format, the score
+floors that let a case tolerate honest, uncatalogued thoroughness, and the stated limits (most
+importantly: **no case currently plants a decoy, so precision is not measured** — the evals show
+these agents do not *miss* things, not that they never *invent* things).
+
+Run one locally with `just eval <case-id>`: it prints the agent, the fixture path, and the scoring
+command. Point that agent at `evals/cases/<case-id>/repo/`, save its findings to a file (one per
+line), then `just eval <case-id> <findings-file>` to score them against the answer key.
+
+**Evals are not in `just ci`, and never will be by design.** Running an agent against a fixture
+means calling a model: not hermetic, not offline, not deterministic — and `tests/run.sh` (what
+`just ci` runs) has to stay all three, the same way a unit-test suite can't depend on a live network
+call. The deterministic half of the eval system *is* in `just ci`, precisely:
+`scripts/check-evals.sh` runs in `just gates` (it checks each case's shape and phantom-checks its
+answer key), and `scripts/score-eval.sh` runs in `just test` — through
+`tests/gates/score-eval.test.sh` and through `tests/gates/reference-findings-replay.test.sh`, which
+replays every case's committed `reference-findings.txt` (a frozen, dated, named-model run) against its
+answer key. Neither ever touches a model. `.github/workflows/eval.yml` runs the same two things
+weekly as a rot-detector — see that file and `evals/README.md` for exactly what a green run there
+does and does not prove about the agent itself.
 
 ## Non-negotiables (the 60-second version)
 

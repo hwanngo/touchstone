@@ -1,0 +1,2 @@
+required|standards/frameworks/django.md|Django 4.2
+required|standards/platform/caching.md|exists

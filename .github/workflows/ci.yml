@@ -80,6 +80,13 @@ jobs:
       - name: Skill description quality (advisory)
         run: bash scripts/check-skill-quality.sh
 
+      # evals/ is the case format check-evals.sh gates: every case under evals/cases/ must be
+      # well-formed, and every defect its answer key claims must really be present in its fixture
+      # repo — the phantom check that stops a case from rotting silently. Gated from the commit
+      # that introduced it, same as agents/ above.
+      - name: Validate eval cases
+        run: bash scripts/check-evals.sh
+
       - name: Skills catalog is up to date
         run: |
           bash scripts/gen-skill-catalog.sh >/tmp/catalog.md

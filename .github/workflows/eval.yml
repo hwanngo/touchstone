@@ -1,0 +1,100 @@
+name: Evals
+
+# Scheduled, and deliberately NOT part of ci.yml's `ci-required` aggregator (it lives in a
+# different workflow file, so it is not in that aggregator's `needs:` by construction — there is
+# nothing to opt out of). Evaluating a subagent (agents/*.md) against a case's repo/ fixture needs a
+# model call: not hermetic, not offline, not deterministic. tests/run.sh and `just ci` must stay all
+# three (see justfile's `eval` recipe comment and evals/README.md's "Hermetic vs. model-dependent"
+# split), so that half of the eval system never runs from a PR-blocking gate. A weekly schedule
+# catches the two things that CAN rot between releases without a model call: an eval case's shape
+# (scripts/check-evals.sh), and whether the scorer and the answer key still agree with each other on
+# a fixed, previously-recorded run (scripts/score-eval.sh replayed below).
+#
+# THIS JOB IS NO LONGER THE ONLY PLACE EITHER OF THOSE RUNS, and must not be relied on as such.
+# Both are also in the blocking suite: check-evals.sh via `just gates`, and the replay below via
+# tests/gates/reference-findings-replay.test.sh under `just test`. That is deliberate — the replay is
+# deterministic, offline and takes milliseconds, so keeping it weekly-only meant a one-character
+# answer-key edit landed green and surfaced up to seven days later, here, in a scheduled job nobody
+# watches. This job is now a ROT-DETECTOR (it re-runs on a clean runner, on a schedule, against the
+# default branch), not the detector.
+#
+# READ evals/README.md's "Reference findings and what the scheduled workflow proves" section before
+# touching this file. In short: step 2 below replays a COMMITTED, STATIC findings file
+# (evals/cases/<id>/reference-findings.txt — the frozen text of a real, dated, named-model blind run,
+# see each case's NOTES.md) through the CURRENT scorer and answer key. Stated plainly: THIS WORKFLOW
+# REGRESSES THE SCORER AND THE ANSWER KEY, NOT THE AGENT. A PASS proves the scorer and the answer key
+# still agree with each other on that frozen text; it proves NOTHING about whether the agent would
+# still find the same defects today — no model runs here. Re-verifying the agent itself
+# is `just eval <case>`, run by a person, on purpose, exactly because that step cannot be automated
+# without either invoking a model in CI or lying about having done so.
+#
+# Same dogfooding posture as ci.yml: least-privilege token, SHA-pinned actions, hardened runner. See
+# ci.yml's header for why every harden-runner step below says `egress-policy: audit` rather than
+# `block` — nothing here differs from that reasoning (no secrets, no deploy, contents:read only).
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC — not tied to any release cadence
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: Eval gates (check-evals.sh + score-eval.sh replay)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      # Real, non-vacuous work: validates every case's shape, runs the phantom check (an
+      # answer-key entry claiming a defect the fixture doesn't have), and the leak check (a repo/
+      # that gives away its own provenance to the agent under test). Exits 1 on zero cases — see
+      # the script's own comments — so this step cannot go quietly green on an empty evals/cases/.
+      - name: Validate eval cases (check-evals.sh)
+        run: bash scripts/check-evals.sh
+
+      # Scores every committed evals/cases/*/reference-findings.txt against its case's
+      # answer-key.txt via scripts/score-eval.sh --meta. NO MODEL IS CALLED HERE — see this file's
+      # header comment and evals/README.md for exactly what a PASS below does and does not prove.
+      #
+      # Vacuity guard: a case directory carrying no reference-findings.txt is skipped (not every
+      # case has one committed — see evals/README.md's "Adding a case" step 6), but the run as a
+      # whole FAILS if it scored zero cases. A scheduled job that silently scored nothing would be
+      # the exact failure mode this kit exists to eliminate, and would report a confident green
+      # while checking nothing.
+      - name: Replay committed reference findings through score-eval.sh
+        run: |
+          set -eu
+          scored=0
+          fail=0
+          for case_dir in evals/cases/*/; do
+            [ -d "$case_dir" ] || continue
+            id="$(basename "$case_dir")"
+            findings="${case_dir}reference-findings.txt"
+            [ -f "$findings" ] || continue
+            echo "::group::${id}"
+            if bash scripts/score-eval.sh "${case_dir}answer-key.txt" "$findings" --meta "${case_dir}meta.txt"; then
+              echo "${id}: scorer/answer-key replay PASSed against the committed reference findings"
+            else
+              echo "${id}: scorer/answer-key replay FAILed — see verdict above" >&2
+              fail=1
+            fi
+            echo "::endgroup::"
+            scored=$((scored + 1))
+          done
+          if [ "$scored" -eq 0 ]; then
+            echo "no evals/cases/*/reference-findings.txt found — nothing was scored." >&2
+            echo "see evals/README.md's 'Reference findings and what the scheduled workflow proves'" >&2
+            exit 1
+          fi
+          echo "scored ${scored} eval case(s) against committed reference findings"
+          [ "$fail" -eq 0 ] || exit 1

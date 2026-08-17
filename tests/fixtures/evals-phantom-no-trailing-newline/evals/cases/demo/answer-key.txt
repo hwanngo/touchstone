@@ -1,0 +1,2 @@
+required|src/config.py|hardcoded credential
+required|missing-file.txt|whatever

@@ -1,0 +1,2 @@
+src/config.py: I checked for a hardcoded credential here and there is none; no action needed
+.github/workflows/ci.yml: no unpinned action anywhere, every uses: ref is correct

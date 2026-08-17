@@ -1,0 +1,17 @@
+# produced 2026-08-17 with sonnet (see NOTES.md). Replaying this recorded findings file through
+# score-eval.sh regresses the scorer and the answer key, not the agent — see evals/README.md.
+
+.pre-commit-config.yaml: hook id `ruff-check` does not exist in astral-sh/ruff-pre-commit at pinned rev v0.8.0 (the real id at that rev is `ruff`), so pre-commit run --all-files aborts the whole run with a fatal error
+justfile: no `setup` recipe is defined even though README.md instructs running `just setup`; `just setup` fails with "error: justfile does not contain recipe `setup`"
+justfile: no `fmt` recipe is defined at all, so the setup/lint/fmt/test/build/ci contract required by .touchstone/standards/self-audit.md is incomplete and there is no formatter to verify against .touchstone/
+justfile: the `lint` recipe invokes `ruff check .` / `ruff format --check .` directly with no install/setup step or pinned dependency, so on a pristine checkout it fails with "ruff: command not found" (spawn failure) before any linting happens
+justfile: `ruff check .` in the `lint` recipe is not scoped to exclude `.touchstone/`, so the gate lints the vendored kit itself and fails on an unused `os` import in .touchstone/scripts/bootstrap_helper.py before ever reaching the adopter's own code
+pyproject.toml: file is absent, so there is no declared/pinned dependency (ruff or otherwise) and no uv-managed toolchain, contradicting README.md's claim the tool is "managed with uv"
+AGENTS.md: file is completely absent from the repo root, even though README.md and .touchstone/standards/README.md both reference it for routing rules
+.github/workflows: no CI workflow file exists anywhere in the repo, so the `just ci` recipe is never actually invoked by CI and the installed gates have no automated enforcement point
+.git: the repo is not a git repository at all (no .git directory), which blocks `pre-commit run --all-files` from running ("git failed. Is it installed, and are you in a Git repository directory?") and means the adopter cannot commit or have pre-commit hooks installed
+.editorconfig: file is absent, though .touchstone/standards/self-audit.md's Repo hygiene checklist requires it
+.gitattributes: file is absent, though .touchstone/standards/self-audit.md's Repo hygiene checklist requires it
+scripts/check-sync.sh: file is absent, so there is no automated way to verify AGENTS.md routing links stay in sync with the vendored kit
+.touchstone/scripts/bootstrap_helper.py: contains an unused `import os` (ruff F401), a real lint violation inside the vendored kit itself, which per .touchstone/standards/README.md the adopter must not edit directly
+uv.lock: file is absent, though .touchstone/standards/self-audit.md requires it to be committed so CI can run `uv sync --locked`

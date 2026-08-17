@@ -33,9 +33,12 @@
 #
 # `.git` and `.touchstone` are excluded so an adopted repo does not rescan its vendored kit
 # submodule; `tests/fixtures/` is excluded because it deliberately contains broken-link fixtures
-# for tests/gates/check-links.test.sh; `.superpowers/` is excluded to match
-# `.markdownlint-cli2.jsonc` — it is git-ignored agent scratch, and prose written there *about*
-# this gate (naming a fixture file, quoting link syntax) otherwise turns the gate red.
+# for tests/gates/check-links.test.sh; `evals/cases/*/repo/` is excluded for the same reason —
+# every case's fixture repo deliberately reproduces a real defect, and "fixing" it to satisfy this
+# gate would mean it no longer reproduces the defect it exists to catch (see evals/README.md);
+# `.superpowers/` is excluded to match `.markdownlint-cli2.jsonc` — it is git-ignored agent
+# scratch, and prose written there *about* this gate (naming a fixture file, quoting link syntax)
+# otherwise turns the gate red.
 #
 # LIMITATION, stated honestly: heading slugs are computed from prose that has already had its
 # inline `code spans` removed — the same stripping the link parser needs so that example link
@@ -87,7 +90,7 @@ if [ "${TOUCHSTONE_ALLOW_NESTED:-0}" != "1" ]; then
       echo "  This gate always scans the repo it lives in: $_ts_root"
       echo "  That is a vendored touchstone checkout inside: $_ts_host"
       echo "  So a verdict from here describes the KIT's files and never opens yours. A green would mean nothing."
-      echo "  check-{agents,links,skill-quality,skills,standards}.sh are touchstone's OWN CI gates, not adopter gates."
+      echo "  check-{agents,evals,links,skill-quality,skills,standards}.sh are touchstone's OWN CI gates, not adopter gates."
       echo "  From a repo that adopted touchstone you want:"
       echo "    ./.touchstone/scripts/check-sync.sh   is my copy of the kit still in sync? (the adopter-facing gate)"
       echo "    just ci                               my own repo's gates"
@@ -525,6 +528,7 @@ done < <(find . -name '*.md' \
   -not -path './.touchstone/*' \
   -not -path './node_modules/*' \
   -not -path './tests/fixtures/*' \
+  -not -path './evals/cases/*/repo/*' \
   -not -path '*/.superpowers/*' \
   -print0)
 

@@ -1,0 +1,4 @@
+agent: demo-agent
+summary: a case whose repo/ leaks its own provenance in a code comment, used to prove the leak check catches it
+min_recall: 100
+max_unmatched: 1

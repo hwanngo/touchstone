@@ -1,0 +1,5 @@
+# produced 2026-08-17 with sonnet (see NOTES.md). Replaying this recorded findings file through
+# score-eval.sh regresses the scorer and the answer key, not the agent — see evals/README.md.
+
+standards/frameworks/django.md: claims Django 4.2 LTS is the current recommended version; 4.2 LTS extended support ended 2026-04-07 (EOL), Django 5.2 LTS is now the current recommended LTS (extended support to 2028-04)
+standards/frameworks/django.md: claims "there is no standalone platform/caching.md in this repo" under Related standards; standards/platform/caching.md exists in this repo and duplicates its performance-notes caching guidance

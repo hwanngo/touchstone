@@ -1,0 +1,2 @@
+# Legacy, pre-uv requirements file — only scripts/setup.sh still reads this.
+fastapi==0.115.0

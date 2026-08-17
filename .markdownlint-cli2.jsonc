@@ -12,12 +12,13 @@
     "MD060": false
   },
   "globs": ["**/*.md"],
-  // tests/fixtures/ holds deliberately-malformed markdown used to prove the gates
-  // detect it. Linting it would fail by construction, so it is excluded here for the
-  // same reason scripts/check-links.sh excludes it from the link scan.
+  // tests/fixtures/ and evals/cases/*/repo/ both hold deliberately-malformed markdown used to
+  // prove the gates detect it. Linting either would fail by construction, so both are excluded
+  // here for the same reason scripts/check-links.sh excludes them from the link scan.
   "ignores": [
     "**/node_modules/**",
     "**/.superpowers/**",
-    "tests/fixtures/**"
+    "tests/fixtures/**",
+    "evals/cases/*/repo/**"
   ]
 }

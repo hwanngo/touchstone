@@ -1,0 +1,2 @@
+required|a.py|foo
+required|b.py|bar

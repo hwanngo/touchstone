@@ -19,8 +19,11 @@ at all. You are the pass that produces the score, with a citation per line.
 ## Inputs, in this order
 
 1. **`.touchstone.toml`** — the adoption marker at the repo root. Read `level` (the maturity level
-   the repo *claims*), `stacks`, and `waivers` (documented, reviewed exceptions). If the file is
-   absent the repo has not adopted the kit; say so and stop rather than auditing it anyway.
+   the repo *claims*), `stacks`, and `waivers` (documented, reviewed exceptions). `level` is `1`–`4`
+   for L1–L4, or `0` — a legal value, not a malformed one — meaning the repo claims to conform at
+   no level at all; treat `0` the same as any other claim and compare it against what you find,
+   never as a file that failed to declare one. If the file is absent the repo has not adopted the
+   kit; say so and stop rather than auditing it anyway.
 2. **`standards/self-audit.md`** — the checklist, and the L1–L4 maturity model that tags each item
    with the level at which it first becomes required. This is the spine of your report. Every
    section states its source doc; a section for a stack the repo does not use is skipped, not

@@ -1,0 +1,25 @@
+# produced 2026-08-17 with sonnet (see NOTES.md). Replaying this recorded findings file through
+# score-eval.sh regresses the scorer and the answer key, not the agent — see evals/README.md.
+
+pyproject.toml: project declares itself uv-managed but no uv.lock is committed
+pyproject.toml: pyright is not a declared dev dependency and carries no [tool.pyright] config (no pyrightconfig.json either); CI invokes it via isolated `uvx pyright` rather than `uv run pyright`, so import roots are not configured
+.github/workflows/ci.yml: every `uses:` step is pinned to a mutable tag (e.g. actions/checkout@v7, harden-runner@v2, setup-uv@v9.0.0), not a commit SHA
+.github/CODEOWNERS: contains only placeholder template entries (@your-org/core-team, @your-org/platform, etc.), not real ownership assignments
+.github/workflows/ci.yml: no CodeQL workflow/job wired anywhere in the repo
+.github/workflows/ci.yml: no dependency-review-action (or equivalent) wired
+.github/workflows/ci.yml: no release-automation workflow (e.g. release-please) present
+CHANGELOG.md: absent, no generated changelog
+SECURITY.md: absent, no written leak-response runbook
+.github/workflows/ci.yml: no scheduled (`schedule:`) workflow anywhere for a deep secret-scanning sweep
+.github/: no dependabot.yml or renovate.json, so there is no dependency-update cooldown policy
+scripts/setup.sh: calls `pip install -r requirements.txt` directly, contradicting the uv-managed toolchain declared in pyproject.toml
+.pre-commit-config.yaml: no commitlint / Conventional-Commit-message hook wired
+justfile: the `ci` recipe (lint+test+build) omits the Pyright type-check and pip-audit steps that .github/workflows/ci.yml runs, so `just ci` does not reproduce the actual CI gates
+.touchstone/standards/: only README.md and self-audit.md are vendored; the dozens of per-stack/practice docs the index and self-audit.md cite (languages/python.md, platform/ci-cd.md, practices/security.md, etc.) are absent from this checkout
+.pre-commit-config.yaml: no markdownlint-cli2 hook wired
+.pre-commit-config.yaml: no lychee link-check hook wired (and none in CI either)
+docs/adr/0001-use-fastapi-and-uv.md: records only the chosen decision with no alternative options considered
+tests/test_health.py: the only test asserts a hardcoded version string; no test exercises any actual application behavior
+justfile: no flaky-test quarantine policy documented or enforced anywhere in the repo
+.pre-commit-config.yaml: shellcheck and shfmt are not wired into pre-commit for scripts/setup.sh
+.github/workflows/ci.yml: shellcheck and shfmt are not wired into CI either; justfile defines `lint-shell`/`hooks-check` recipes but the `ci` recipe never calls them

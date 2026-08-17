@@ -1,0 +1,4 @@
+agent: ghost-agent
+summary: a case whose meta.txt names an agent this tree does not ship
+min_recall: 100
+max_unmatched: 0

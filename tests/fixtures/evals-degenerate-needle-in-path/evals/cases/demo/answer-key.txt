@@ -1,0 +1,2 @@
+required|src/config.py|config.py
+optional|README.md|stale badge

@@ -1,0 +1,4 @@
+agent: demo-agent
+summary: an answer key with no trailing newline, whose last (unterminated) line names a phantom
+min_recall: 100
+max_unmatched: 0

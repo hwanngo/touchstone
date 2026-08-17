@@ -1,0 +1,5 @@
+# Tracks which touchstone version/stacks/level this repo adopts. See .touchstone/scripts/check-sync.sh.
+version = "0.2.0"
+stacks = ["python"]
+level = 3            # maturity level you target (see .touchstone/standards/self-audit.md): 1=Hygiene .. 4=Scale-up
+waivers = []          # documented, reviewed exceptions

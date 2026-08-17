@@ -232,7 +232,7 @@ else
 # Tracks which touchstone version/stacks/level this repo adopts. See touchstone/scripts/check-sync.sh.
 version = "$VERSION"
 stacks = [$(echo "$STACKS" | tr ' ' '\n' | grep -v '^$' | sed 's/.*/"&"/' | paste -sd, -)]
-level = 1            # maturity level you target (see ${KIT_REL}/standards/self-audit.md): 1=Hygiene .. 4=Scale-up
+level = 0            # maturity level you actually conform to today (see ${KIT_REL}/standards/self-audit.md): 0=none yet, 1=Hygiene .. 4=Scale-up — a claim, not a goal. init.sh scaffolds the config; it does not verify a single item, so 0 is the only honest starting value. Score the checklist yourself and raise it only once every item up to it is genuinely ✅
 waivers = []         # documented, reviewed exceptions
 EOF
   say "place  .touchstone.toml"
